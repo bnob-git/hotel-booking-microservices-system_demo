@@ -32,7 +32,10 @@ wait_for_cleanup() {
 case "$1" in
     k8s)
         echo "Removing Kubernetes manifest deployment..."
-        kubectl delete -R -f k8s/ --ignore-not-found
+        kubectl delete -R -f k8s/ --ignore-not-found --wait=false
+
+        echo "Removing Gemini Secret..."
+        kubectl delete secret gemini-secret --ignore-not-found
 
         wait_for_cleanup
         ;;
@@ -40,6 +43,9 @@ case "$1" in
     helm)
         echo "Removing Helm release..."
         helm uninstall hotel-booking || true
+
+        echo "Removing Gemini Secret..."
+        kubectl delete secret gemini-secret --ignore-not-found
 
         wait_for_cleanup
         ;;
@@ -50,7 +56,10 @@ case "$1" in
 
         echo
         echo "Removing Kubernetes manifest deployment..."
-        kubectl delete -R -f k8s/ --ignore-not-found
+        kubectl delete -R -f k8s/ --ignore-not-found --wait=false
+
+        echo "Removing Gemini Secret..."
+        kubectl delete secret gemini-secret --ignore-not-found
 
         wait_for_cleanup
         ;;

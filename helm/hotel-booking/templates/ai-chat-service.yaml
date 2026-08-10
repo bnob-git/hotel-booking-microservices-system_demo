@@ -8,15 +8,22 @@ metadata:
 data:
   SERVER_PORT: {{ .Values.aiChatService.serverPort | quote }}
 
-  OLLAMA_URL: {{ .Values.aiChatService.ollamaUrl | quote }}
-  OLLAMA_MODEL: {{ .Values.ollama.model | quote }}
-  OLLAMA_TEMPERATURE: {{ .Values.aiChatService.ollamaTemperature | quote }}
+  SPRING_PROFILES_ACTIVE: {{ .Values.ai.provider | quote }}
 
   BOOKING_SERVICE_URL: {{ .Values.aiChatService.bookingServiceUrl | quote }}
   USER_SERVICE_URL: {{ .Values.aiChatService.userServiceUrl | quote }}
   AUDIT_SERVICE_URL: {{ .Values.aiChatService.auditServiceUrl | quote }}
 
+{{- if eq .Values.ai.provider "ollama" }}
+
+  OLLAMA_URL: {{ .Values.aiChatService.ollamaUrl | quote }}
+  OLLAMA_MODEL: {{ .Values.ollama.model | quote }}
+  OLLAMA_TEMPERATURE: {{ .Values.aiChatService.ollamaTemperature | quote }}
+
+{{- end }}
+
 ---
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -48,7 +55,15 @@ spec:
             - configMapRef:
                 name: ai-chat-config
 
+{{- if eq .Values.ai.provider "gemini" }}
+
+            - secretRef:
+                name: gemini-secret
+
+{{- end }}
+
 ---
+
 apiVersion: v1
 kind: Service
 metadata:

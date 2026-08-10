@@ -5,7 +5,10 @@
     <div *ngFor="let msg of messages" [ngClass]="{ 'user-msg': msg.user, 'ai-msg': !msg.user }">
       <strong *ngIf="msg.user">You:</strong>
       <strong *ngIf="!msg.user">AI:</strong>
-      {{ msg.text }}
+      <div *ngIf="msg.user">
+        {{ msg.text }}
+      </div>
+      <markdown *ngIf="!msg.user" [data]="msg.text"></markdown>
     </div>
   </div>
 

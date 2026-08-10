@@ -10,23 +10,23 @@ This project can be deployed in three different ways:
 - Kubernetes Manifests
 - Helm Chart
 
-The AI components (Ollama and AI Chat Service) are optional and can be enabled for all deployment methods.
+The AI Chat Service is optional and can use either a local Ollama/Qwen3 model or the Google Gemini API and can be enabled for all deployment methods.
 
 ## Architecture
 
 ### Services
 
-| Service           | Responsibility                                          |
-| ----------------- | ------------------------------------------------------- |
-| API Gateway       | Single entry point for frontend requests                |
-| User Service      | Authentication, authorization, and user management      |
-| Booking Service   | Booking management and business rules                   |
-| Audit Service     | Consumes audit events and stores audit logs             |
-| Apache Kafka      | Event streaming platform for asynchronous communication |
-| AI Chat Service   | AI assistant with access to system data                 |
-| Frontend          | Angular web application                                 |
-| PostgreSQL        | Persistent data storage                                 |
-| Ollama (Optional) | Local LLM runtime for AI features                       |
+| Service                | Responsibility                                          |
+| ---------------------- | ------------------------------------------------------- |
+| API Gateway            | Single entry point for frontend requests                |
+| User Service           | Authentication, authorization, and user management      |
+| Booking Service        | Booking management and business rules                   |
+| Audit Service          | Consumes audit events and stores audit logs             |
+| Apache Kafka           | Event streaming platform for asynchronous communication |
+| AI Chat Service        | AI assistant with access to system data                 |
+| Frontend               | Angular web application                                 |
+| PostgreSQL             | Persistent data storage                                 |
+| AI Provider (Optional) | Ollama (local) or Google Gemini (cloud)                 |
 
 ---
 
@@ -39,8 +39,7 @@ The AI components (Ollama and AI Chat Service) are optional and can be enabled f
                                            │
                                            ▼
                              ┌──────────────────────────┐
-                             │ Angular Frontend (Nginx) │
-                             │   http://localhost:3000  │
+                             │ Angular Frontend (Nginx) │  
                              └────────────┬─────────────┘
                                           │
                                           ▼
@@ -56,7 +55,7 @@ The AI components (Ollama and AI Chat Service) are optional and can be enabled f
                         │   │          │   │                │
                         ▼   │          │   ▼                ▼
                ┌──────────────┐   ┌────────────┐   ┌────────────────┐
-               │userservice_db│   │ booking_db │   │  Ollama (LLM)  │
+               │userservice_db│   │ booking_db │   │  AI Provider   │
                └──────────────┘   └────────────┘   └────────────────┘
                             │         │
                             └────┬────┘
@@ -129,10 +128,13 @@ Examples:
 
 ### AI Chat Service
 
-- Answers questions about users, rooms, and bookings
-- Aggregates information from the User Service, Booking Service, and Audit Service
-- Read-only access to business data
-- Optional feature
+- Optional AI assistant for administrators
+- Built with Spring AI
+- Provides read-only access to users, bookings, and audit events
+- Uses tool calling to retrieve information from backend services
+- Supports two AI providers:
+  - Ollama with Qwen3 for local AI processing
+  - Google Gemini API for cloud-based AI processing
 
 ---
 
@@ -145,6 +147,7 @@ Examples:
 - REST for synchronous client requests
 - Event-driven communication using Apache Kafka
 - AI service is read-only
+- AI provider can be switched between Ollama and Google Gemini
 - Audit service is passive
 
 ---
@@ -240,8 +243,9 @@ Each service owns its own database and is responsible for its own data.
 
 ### AI
 
-- Ollama
-- Qwen3
+- Spring AI
+- Ollama + Qwen3 (local provider)
+- Google Gemini API + Gemini 3.5 Flash (cloud provider)
 
 ### DevOps
 
@@ -296,14 +300,30 @@ Alternatively, if you use an IDE such as IntelliJ IDEA, you can build each servi
 
 For Kubernetes and Helm deployments, build the Docker images inside Minikube before deploying.
 
-| Deployment          | Command                                                          |
-| ------------------- | ---------------------------------------------------------------- |
-| Docker Compose      | `docker compose up --build`                                      |
-| Docker Compose + AI | `docker compose --profile ai up --build`                         |
-| Kubernetes          | `./scripts/build-images.sh` then `./scripts/deploy-k8s.sh`       |
-| Kubernetes + AI     | `./scripts/build-images.sh` then `./scripts/deploy-k8s-ai.sh`    |
-| Helm                | `./scripts/build-images.sh` then `./scripts/deploy-helm.sh`      |
-| Helm + AI           | `./scripts/build-images.sh` then `./scripts/deploy-helm.sh --ai` |
+| Deployment                 | Command                                                              |
+| -------------------------- | -------------------------------------------------------------------- |
+| Docker Compose             | `docker compose up --build`                                          |
+| Docker Compose + Ollama    | `docker compose --profile ollama up --build`                         |
+| Docker Compose + Gemini    | `docker compose --profile gemini up --build`                         |
+| Kubernetes                 | `./scripts/build-images.sh` then `./scripts/deploy-k8s.sh`           |
+| Kubernetes + Ollama        | `./scripts/build-images.sh` then `./scripts/deploy-k8s-ollama.sh`    |
+| Kubernetes + Gemini        | `./scripts/build-images.sh` then `./scripts/deploy-k8s-gemini.sh`    |
+| Helm                       | `./scripts/build-images.sh` then `./scripts/deploy-helm.sh`          |
+| Helm + Ollama              | `./scripts/build-images.sh` then `./scripts/deploy-helm.sh --ollama` |
+| Helm + Gemini              | `./scripts/build-images.sh` then `./scripts/deploy-helm.sh --gemini` |
+
+#### Gemini API Key
+
+Gemini deployments require a GEMINI_API_KEY.
+
+Create a .env file in the project root:
+
+```text
+GEMINI_API_KEY=your_api_key
+```
+Docker Compose reads GEMINI_API_KEY from .env when running the Gemini profile.
+
+The Kubernetes and Helm Gemini deployment scripts read the same .env file and create/update the Kubernetes gemini-secret.
 
 #### Cleanup
 
@@ -313,7 +333,7 @@ For Kubernetes and Helm deployments, build the Docker images inside Minikube bef
 | Helm Chart              | `./scripts/cleanup.sh helm` |
 | Both                    | `./scripts/cleanup.sh all`  |
 
-The cleanup script removes Kubernetes resources created by the selected deployment method. Docker Compose can be stopped with `docker compose down`.
+The cleanup script removes Kubernetes resources created by the selected deployment method, including the Gemini Kubernetes Secret. Docker Compose can be stopped with `docker compose down`.
 
 #### Accessing the Application - Docker Compose
 
@@ -403,7 +423,10 @@ password
 - JWT authentication and authorization
 - Role-based access control (RBAC)
 - Docker containerization
-- Optional AI integration (Spring AI + Ollama)
+- Optional AI integration with Spring AI
+- AI provider integration with Ollama/Qwen3 or Google Gemini
+- AI tool calling for accessing backend data
+- Read-only AI access to business data
 - Kubernetes Deployments
 - StatefulSets
 - ConfigMaps
@@ -414,3 +437,4 @@ password
 - NGINX Ingress
 - Helm charts
 - Infrastructure as Code
+

@@ -3,6 +3,7 @@ import { UserService } from '../../core/services/user.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChatService } from '../../core/services/chat.service';
+import { MarkdownModule } from 'ngx-markdown';
 
 interface Message {
   user: boolean; // true if user sent it
@@ -11,7 +12,7 @@ interface Message {
 
 @Component({
   selector: 'app-chat',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MarkdownModule],
   templateUrl: './chat.html',
   styleUrls: ['./chat.scss'],
 })
@@ -60,6 +61,13 @@ export class ChatComponent {
         if (index === -1) return;
 
         switch (err.status) {
+          case 429:
+            this.messages[index] = {
+              user: false,
+              text: 'AI usage limit reached. Please try again shortly.',
+            };
+            break;
+
           case 503:
             this.messages[index] = {
               user: false,

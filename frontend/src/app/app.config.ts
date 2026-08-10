@@ -10,6 +10,7 @@ import { routes } from './app.routes';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { jwtInterceptor } from './core/interceptors/jwt.interceptor';
+import { provideMarkdown } from 'ngx-markdown';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -19,5 +20,6 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
     importProvidersFrom(BrowserAnimationsModule),
     provideHttpClient(withInterceptors([jwtInterceptor])),
+    provideMarkdown(),
   ],
 };

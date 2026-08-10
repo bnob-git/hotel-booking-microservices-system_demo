@@ -102,7 +102,7 @@ services:
       - ollama-data:/root/.ollama
     networks:
       - hotel-net
-    profiles: ["ai"]
+    profiles: ["ollama"]
 
   ollama-init:
     image: curlimages/curl:8.5.0
@@ -110,7 +110,7 @@ services:
       - ollama
     networks:
       - hotel-net
-    profiles: ["ai"]
+    profiles: ["ollama"]
     restart: "no"
     volumes:
       - ./ollama-init.sh:/ollama-init.sh
@@ -118,12 +118,12 @@ services:
       OLLAMA_MODEL: qwen3:4b
     entrypoint: ["/bin/sh", "/ollama-init.sh"]
 
-  ai-chat-service:
+  ai-chat-service-ollama:
     build:
       context: ./ai-chat-service
-    container_name: ai-chat-service
     restart: unless-stopped
     environment:
+      SPRING_PROFILES_ACTIVE: ollama
       OLLAMA_URL: http://ollama:11434
       OLLAMA_MODEL: qwen3:4b
       BOOKING_SERVICE_URL: http://booking-service:8082
@@ -132,8 +132,26 @@ services:
     depends_on:
       - ollama
     networks:
-      - hotel-net
-    profiles: ["ai"]
+      hotel-net:
+        aliases:
+          - ai-chat-service
+    profiles: ["ollama"]
+
+  ai-chat-service-gemini:
+    build:
+      context: ./ai-chat-service
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: gemini
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      BOOKING_SERVICE_URL: http://booking-service:8082
+      USER_SERVICE_URL: http://user-service:8081
+      AUDIT_SERVICE_URL: http://audit-service:8083
+    networks:
+      hotel-net:
+        aliases:
+          - ai-chat-service
+    profiles: ["gemini"]
 
   api-gateway:
     build:

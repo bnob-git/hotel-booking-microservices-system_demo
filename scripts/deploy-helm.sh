@@ -17,14 +17,52 @@ fi
 CHART="./helm/hotel-booking"
 RELEASE="hotel-booking"
 
-if [[ "$1" == "--ai" ]]; then
-    echo "Deploying with AI components..."
-    helm upgrade --install "$RELEASE" "$CHART" \
-        --set ai.enabled=true
-else
-    echo "Deploying without AI components..."
-    helm upgrade --install "$RELEASE" "$CHART"
-fi
+case "$1" in
+
+    --ollama)
+        echo "Deploying with Ollama AI..."
+
+        helm upgrade --install "$RELEASE" "$CHART" \
+            --set ai.enabled=true \
+            --set ai.provider=ollama
+        ;;
+
+    --gemini)
+        echo "Deploying with Gemini AI..."
+
+        if [ ! -f .env ]; then
+            echo ".env file not found."
+            echo "Create .env with:"
+            echo "GEMINI_API_KEY=your_api_key"
+            exit 1
+        fi
+
+        if ! grep -q '^GEMINI_API_KEY=' .env; then
+            echo "GEMINI_API_KEY not found in .env."
+            exit 1
+        fi
+
+        GEMINI_API_KEY=$(grep '^GEMINI_API_KEY=' .env | cut -d '=' -f2-)
+
+        echo "Creating/updating Gemini Secret..."
+
+        kubectl create secret generic gemini-secret \
+            --from-literal=GEMINI_API_KEY="$GEMINI_API_KEY" \
+            --dry-run=client \
+            -o yaml | kubectl apply -f -
+
+        helm upgrade --install "$RELEASE" "$CHART" \
+            --set ai.enabled=true \
+            --set ai.provider=gemini
+        ;;
+
+    *)
+        echo "Deploying without AI..."
+
+        helm upgrade --install "$RELEASE" "$CHART"
+        ;;
+
+esac
 
 echo
 echo "Helm release deployed successfully."

@@ -19,12 +19,12 @@ public class AuditTools {
     @Tool(description = "Returns recent audit events from the audit service")
     public List<AuditEventResponse> getRecentEvents() {
 
-        return auditClient.getRecentEvents(5);
+        return auditClient.getRecentEvents(10);
     }
 
     @Tool(description = "Returns audit events filtered by event type such as BOOKING_CREATED or BOOKING_CANCELLED")
     public List<AuditEventResponse> getEventsByType(String eventType) {
 
-        return auditClient.getEventsByType(eventType, 5);
+        return auditClient.getEventsByType(eventType, 10);
     }
 }

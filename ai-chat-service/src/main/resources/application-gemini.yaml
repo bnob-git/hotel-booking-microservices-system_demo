@@ -1,0 +1,18 @@
+spring:
+  ai:
+    model:
+      chat: google-genai
+
+    google:
+      genai:
+        api-key: ${GEMINI_API_KEY}
+
+        chat:
+          options:
+            model: gemini-3.5-flash
+            temperature: 0.2
+
+    retry:
+      on-client-errors: false
+      exclude-on-http-codes:
+        - 429

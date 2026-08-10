@@ -1,4 +1,4 @@
-{{- if .Values.ai.enabled }}
+{{- if and .Values.ai.enabled (eq .Values.ai.provider "ollama") }}
 
 apiVersion: v1
 kind: ConfigMap

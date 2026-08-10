@@ -28,3 +28,5 @@ spec:
           envFrom:
             - configMapRef:
                 name: ai-chat-config
+            - secretRef:
+                name: gemini-secret
