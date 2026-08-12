@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  backend-tests:
+  backend-ci:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,27 +21,27 @@ jobs:
           java-version: '21'
           cache: maven
 
-      - name: Test User Service
+      - name: Build and test User Service
         working-directory: user-service
-        run: ./mvnw test
+        run: ./mvnw clean package
 
-      - name: Test Booking Service
+      - name: Build and test Booking Service
         working-directory: booking-service
-        run: ./mvnw test
+        run: ./mvnw clean package
 
-      - name: Test Audit Service
+      - name: Build and test Audit Service
         working-directory: audit-service
-        run: ./mvnw test
+        run: ./mvnw clean package
 
-      - name: Test API Gateway
+      - name: Build and test API Gateway
         working-directory: api-gateway
-        run: ./mvnw test
+        run: ./mvnw clean package
 
-      - name: Test AI Chat Service
+      - name: Build and test AI Chat Service
         working-directory: ai-chat-service
-        run: ./mvnw test
+        run: ./mvnw clean package
 
-  frontend-tests:
+  frontend-ci:
     runs-on: ubuntu-latest
 
     defaults:
@@ -63,4 +63,63 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: npm test -- --watch=false --no-progress
+        run: un: npm test -- --watch=false --no-progress --browsers=ChromeHeadless
+      - name: Build frontend
+        run: npm run build
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs:
+      - backend-ci
+      - frontend-ci
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build User Service image
+        run: docker build -t ghcr.io/${{ github.repository_owner }}/hotel-booking-user-service:latest ./user-service
+
+      - name: Build Booking Service image
+        run: docker build -t ghcr.io/${{ github.repository_owner }}/hotel-booking-booking-service:latest ./booking-service
+
+      - name: Build Audit Service image
+        run: docker build -t ghcr.io/${{ github.repository_owner }}/hotel-booking-audit-service:latest ./audit-service
+
+      - name: Build API Gateway image
+        run: docker build -t ghcr.io/${{ github.repository_owner }}/hotel-booking-api-gateway:latest ./api-gateway
+
+      - name: Build AI Chat Service image
+        run: docker build -t ghcr.io/${{ github.repository_owner }}/hotel-booking-ai-chat-service:latest ./ai-chat-service
+
+      - name: Build Frontend image
+        run: docker build -t ghcr.io/${{ github.repository_owner }}/hotel-booking-frontend:latest ./frontend
+
+      - name: Push User Service image
+        run: docker push ghcr.io/${{ github.repository_owner }}/hotel-booking-user-service:latest
+
+      - name: Push Booking Service image
+        run: docker push ghcr.io/${{ github.repository_owner }}/hotel-booking-booking-service:latest
+
+      - name: Push Audit Service image
+        run: docker push ghcr.io/${{ github.repository_owner }}/hotel-booking-audit-service:latest
+
+      - name: Push API Gateway image
+        run: docker push ghcr.io/${{ github.repository_owner }}/hotel-booking-api-gateway:latest
+
+      - name: Push AI Chat Service image
+        run: docker push ghcr.io/${{ github.repository_owner }}/hotel-booking-ai-chat-service:latest
+
+      - name: Push Frontend image
+        run: docker push ghcr.io/${{ github.repository_owner }}/hotel-booking-frontend:latest
