@@ -18,7 +18,7 @@ describe('Bookings Component', () => {
   beforeEach(async () => {
     bookingServiceMock = {
       getAllBookings: jasmine.createSpy().and.returnValue(of([])),
-      getBookingsByUser: jasmine.createSpy().and.returnValue(of([])),
+      getMyBookings: jasmine.createSpy().and.returnValue(of([])),
       createBooking: jasmine.createSpy(),
       deleteBooking: jasmine.createSpy().and.returnValue(of({})),
     };
@@ -58,14 +58,12 @@ describe('Bookings Component', () => {
 
   //  Initialization
   it('should initialize booking with user and room', () => {
-    expect(component.newBooking().userId).toBe(1);
     expect(component.newBooking().roomId).toBe(1);
   });
 
   //  Validation
   it('should show error when fields are missing', () => {
     component.newBooking.set({
-      userId: 0,
       roomId: 0,
       checkInDate: '',
       checkOutDate: '',
@@ -83,7 +81,6 @@ describe('Bookings Component', () => {
     bookingServiceMock.createBooking.and.returnValue(of(mockBooking));
 
     component.newBooking.set({
-      userId: 1,
       roomId: 1,
       checkInDate: '2026-12-01',
       checkOutDate: '2026-12-05',
