@@ -77,6 +77,10 @@ jobs:
       contents: read
       packages: write
 
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_OWNER: milanpopovic87
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -89,37 +93,37 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build User Service image
-        run: docker build -t ghcr.io/${{ github.repository_owner }}/hotel-booking-user-service:latest ./user-service
+        run: docker build -t $REGISTRY/$IMAGE_OWNER/hotel-booking-user-service:latest ./user-service
 
       - name: Build Booking Service image
-        run: docker build -t ghcr.io/${{ github.repository_owner }}/hotel-booking-booking-service:latest ./booking-service
+        run: docker build -t $REGISTRY/$IMAGE_OWNER/hotel-booking-booking-service:latest ./booking-service
 
       - name: Build Audit Service image
-        run: docker build -t ghcr.io/${{ github.repository_owner }}/hotel-booking-audit-service:latest ./audit-service
+        run: docker build -t $REGISTRY/$IMAGE_OWNER/hotel-booking-audit-service:latest ./audit-service
 
       - name: Build API Gateway image
-        run: docker build -t ghcr.io/${{ github.repository_owner }}/hotel-booking-api-gateway:latest ./api-gateway
+        run: docker build -t $REGISTRY/$IMAGE_OWNER/hotel-booking-api-gateway:latest ./api-gateway
 
       - name: Build AI Chat Service image
-        run: docker build -t ghcr.io/${{ github.repository_owner }}/hotel-booking-ai-chat-service:latest ./ai-chat-service
+        run: docker build -t $REGISTRY/$IMAGE_OWNER/hotel-booking-ai-chat-service:latest ./ai-chat-service
 
       - name: Build Frontend image
-        run: docker build -t ghcr.io/${{ github.repository_owner }}/hotel-booking-frontend:latest ./frontend
+        run: docker build -t $REGISTRY/$IMAGE_OWNER/hotel-booking-frontend:latest ./frontend
 
       - name: Push User Service image
-        run: docker push ghcr.io/${{ github.repository_owner }}/hotel-booking-user-service:latest
+        run: docker push $REGISTRY/$IMAGE_OWNER/hotel-booking-user-service:latest
 
       - name: Push Booking Service image
-        run: docker push ghcr.io/${{ github.repository_owner }}/hotel-booking-booking-service:latest
+        run: docker push $REGISTRY/$IMAGE_OWNER/hotel-booking-booking-service:latest
 
       - name: Push Audit Service image
-        run: docker push ghcr.io/${{ github.repository_owner }}/hotel-booking-audit-service:latest
+        run: docker push $REGISTRY/$IMAGE_OWNER/hotel-booking-audit-service:latest
 
       - name: Push API Gateway image
-        run: docker push ghcr.io/${{ github.repository_owner }}/hotel-booking-api-gateway:latest
+        run: docker push $REGISTRY/$IMAGE_OWNER/hotel-booking-api-gateway:latest
 
       - name: Push AI Chat Service image
-        run: docker push ghcr.io/${{ github.repository_owner }}/hotel-booking-ai-chat-service:latest
+        run: docker push $REGISTRY/$IMAGE_OWNER/hotel-booking-ai-chat-service:latest
 
       - name: Push Frontend image
-        run: docker push ghcr.io/${{ github.repository_owner }}/hotel-booking-frontend:latest
+        run: docker push $REGISTRY/$IMAGE_OWNER/hotel-booking-frontend:latest
