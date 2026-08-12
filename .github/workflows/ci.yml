@@ -63,7 +63,7 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: un: npm test -- --watch=false --no-progress --browsers=ChromeHeadless
+        run: npm test -- --watch=false --no-progress --browsers=ChromeHeadless
       - name: Build frontend
         run: npm run build
 
