@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Java 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
@@ -94,6 +94,7 @@ jobs:
     env:
       REGISTRY: ghcr.io
       IMAGE_OWNER: milanpopovic87
+      IMAGE_TAG: ${{ github.sha }}
 
     steps:
       - name: Checkout repository
@@ -112,37 +113,37 @@ jobs:
           name: backend-jars
 
       - name: Build User Service image
-        run: docker build -t $REGISTRY/$IMAGE_OWNER/hotel-booking-user-service:latest ./user-service
+        run: docker build -t $REGISTRY/$IMAGE_OWNER/hotel-booking-user-service:$IMAGE_TAG ./user-service
 
       - name: Build Booking Service image
-        run: docker build -t $REGISTRY/$IMAGE_OWNER/hotel-booking-booking-service:latest ./booking-service
+        run: docker build -t $REGISTRY/$IMAGE_OWNER/hotel-booking-booking-service:$IMAGE_TAG ./booking-service
 
       - name: Build Audit Service image
-        run: docker build -t $REGISTRY/$IMAGE_OWNER/hotel-booking-audit-service:latest ./audit-service
+        run: docker build -t $REGISTRY/$IMAGE_OWNER/hotel-booking-audit-service:$IMAGE_TAG ./audit-service
 
       - name: Build API Gateway image
-        run: docker build -t $REGISTRY/$IMAGE_OWNER/hotel-booking-api-gateway:latest ./api-gateway
+        run: docker build -t $REGISTRY/$IMAGE_OWNER/hotel-booking-api-gateway:$IMAGE_TAG ./api-gateway
 
       - name: Build AI Chat Service image
-        run: docker build -t $REGISTRY/$IMAGE_OWNER/hotel-booking-ai-chat-service:latest ./ai-chat-service
+        run: docker build -t $REGISTRY/$IMAGE_OWNER/hotel-booking-ai-chat-service:$IMAGE_TAG ./ai-chat-service
 
       - name: Build Frontend image
-        run: docker build -t $REGISTRY/$IMAGE_OWNER/hotel-booking-frontend:latest ./frontend
+        run: docker build -t $REGISTRY/$IMAGE_OWNER/hotel-booking-frontend:$IMAGE_TAG ./frontend
 
       - name: Push User Service image
-        run: docker push $REGISTRY/$IMAGE_OWNER/hotel-booking-user-service:latest
+        run: docker push $REGISTRY/$IMAGE_OWNER/hotel-booking-user-service:$IMAGE_TAG
 
       - name: Push Booking Service image
-        run: docker push $REGISTRY/$IMAGE_OWNER/hotel-booking-booking-service:latest
+        run: docker push $REGISTRY/$IMAGE_OWNER/hotel-booking-booking-service:$IMAGE_TAG
 
       - name: Push Audit Service image
-        run: docker push $REGISTRY/$IMAGE_OWNER/hotel-booking-audit-service:latest
+        run: docker push $REGISTRY/$IMAGE_OWNER/hotel-booking-audit-service:$IMAGE_TAG
 
       - name: Push API Gateway image
-        run: docker push $REGISTRY/$IMAGE_OWNER/hotel-booking-api-gateway:latest
+        run: docker push $REGISTRY/$IMAGE_OWNER/hotel-booking-api-gateway:$IMAGE_TAG
 
       - name: Push AI Chat Service image
-        run: docker push $REGISTRY/$IMAGE_OWNER/hotel-booking-ai-chat-service:latest
+        run: docker push $REGISTRY/$IMAGE_OWNER/hotel-booking-ai-chat-service:$IMAGE_TAG
 
       - name: Push Frontend image
-        run: docker push $REGISTRY/$IMAGE_OWNER/hotel-booking-frontend:latest
+        run: docker push $REGISTRY/$IMAGE_OWNER/hotel-booking-frontend:$IMAGE_TAG
