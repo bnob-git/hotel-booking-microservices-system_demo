@@ -2,6 +2,24 @@
 
 A full-stack hotel booking application built using a microservices architecture. The system consists of independent Spring Boot services, an Angular frontend, Spring Cloud Gateway, PostgreSQL databases, Apache Kafka for asynchronous event-driven communication, and an optional AI assistant powered by Spring AI and Ollama.
 
+## Screenshots
+
+### User Dashboard
+
+![User Dashboard](docs/screenshots/user-dashboard.png)
+
+### Booking
+
+![Booking](docs/screenshots/booking.png)
+
+### Admin Dashboard
+
+![Admin Dashboard](docs/screenshots/admin-dashboard.png)
+
+### AI Assistant
+
+![AI Assistant](docs/screenshots/ai-chat-gemini.png)
+
 ## Deployment Options
 
 This project can be deployed in three different ways:
@@ -261,6 +279,16 @@ Each service owns its own database and is responsible for its own data.
 
 ---
 
+## Continuous Integration
+
+GitHub Actions automatically:
+
+- Runs backend tests and builds
+- Runs frontend tests and production build
+- Builds Docker images
+- Publishes Docker images to GitHub Container Registry
+- Tags images with the Git commit SHA
+
 ## Getting Started
 
 ### Prerequisites
@@ -311,6 +339,15 @@ For Kubernetes and Helm deployments, build the Docker images inside Minikube bef
 | Helm                       | `./scripts/build-images.sh` then `./scripts/deploy-helm.sh`          |
 | Helm + Ollama              | `./scripts/build-images.sh` then `./scripts/deploy-helm.sh --ollama` |
 | Helm + Gemini              | `./scripts/build-images.sh` then `./scripts/deploy-helm.sh --gemini` |
+
+#### Cloud Deployment
+
+The current architecture is designed for local deployment using Docker Compose or Kubernetes/Helm. 
+A free public cloud deployment is not currently provided because running the complete stack 
+(PostgreSQL, Kafka, five Spring Boot services, Angular/Nginx, and the optional AI service) 
+requires more resources than typical free-tier hosting provides.
+
+For demonstration purposes, the application can be run locally using Docker Compose or Minikube.
 
 #### Gemini API Key
 
