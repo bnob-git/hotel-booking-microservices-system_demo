@@ -1,6 +1,6 @@
 # Hotel Booking Microservices System
 
-A full-stack hotel booking application built using a microservices architecture. The system consists of independent Spring Boot services, an Angular frontend, Spring Cloud Gateway, PostgreSQL databases, Apache Kafka for asynchronous event-driven communication, and an optional AI assistant powered by Spring AI and Ollama.
+A full-stack hotel booking application built using a microservices architecture. The system consists of independent Spring Boot services, an Angular frontend, Spring Cloud Gateway, PostgreSQL databases, Apache Kafka for asynchronous event-driven communication, and an optional AI assistant powered by Spring AI with Ollama or Google Gemini.
 
 ## Screenshots
 
@@ -473,5 +473,5 @@ password
 - Kubernetes Jobs
 - NGINX Ingress
 - Helm charts
-- Infrastructure as Code
+- Infrastructure as Code with Kubernetes manifests and Helm
 
