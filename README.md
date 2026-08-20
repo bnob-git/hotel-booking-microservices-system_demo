@@ -69,27 +69,27 @@ The AI Chat Service is optional and can use either a local Ollama/Qwen3 model or
                              ▼            ▼             ▼
                 ┌───────────────┐ ┌───────────────┐ ┌───────────────┐
                 │ User Service  │ │Booking Service│ │AI Chat Service│
-                └───────┬───┬───┘ └────┬───┬──────┘ └───────┬───────┘
-                        │   │          │   │                │
-                        ▼   │          │   ▼                ▼
+                └───────┬─┬─────┘ └──────┬─┬──────┘ └─────┬─┬───────┘
+                        │ │              │ │              │ │
+                        ▼ │              │ ▼              │ ▼
                ┌──────────────┐   ┌────────────┐   ┌────────────────┐
                │userservice_db│   │ booking_db │   │  AI Provider   │
                └──────────────┘   └────────────┘   └────────────────┘
-                            │         │
-                            └────┬────┘
-                                 ▼
-                        ┌────────────────┐
-                        │  Apache Kafka  │
-                        │  audit-events  │
-                        └───────┬────────┘
-                                ▼
-                        ┌────────────────┐
-                        │ Audit Service  │
-                        └───────┬────────┘
-                                ▼
-                        ┌────────────────┐
-                        │    audit_db    │
-                        └────────────────┘
+                          │              │                │
+                          └──────────────┬────────────────┘
+                                         ▼
+                                 ┌────────────────┐
+                                 │  Apache Kafka  │
+                                 │  audit-events  │
+                                 └───────┬────────┘
+                                         ▼
+                                 ┌────────────────┐
+                                 │ Audit Service  │
+                                 └───────┬────────┘
+                                         ▼
+                                 ┌────────────────┐
+                                 │    audit_db    │
+                                 └────────────────┘
 ```
 
 ### Request Flow
@@ -138,18 +138,29 @@ Internal service-to-service communication uses synchronous REST APIs via Spring 
 
 Examples:
 
-- User registered
-- User updated
-- User deleted
-- Booking created
-- Booking cancelled
+**User events**
+- `USER_REGISTERED`
+- `USER_UPDATED`
+- `USER_DELETED`
+
+**Booking events**
+- `BOOKING_CREATED`
+- `BOOKING_CANCELLED`
+
+**AI events**
+- `AI_REQUEST`
+- `AI_RESPONSE`
+- `AI_RATE_LIMITED`
+- `AI_ERROR`
 
 ### AI Chat Service
 
 - Optional AI assistant for administrators
 - Built with Spring AI
 - Provides read-only access to users, bookings, and audit events
+- Protected by a dedicated service-to-service authentication token
 - Uses tool calling to retrieve information from backend services
+- AI requests are registered by the Audit Service
 - Supports two AI providers:
   - Ollama with Qwen3 for local AI processing
   - Google Gemini API for cloud-based AI processing
@@ -167,6 +178,9 @@ Examples:
 - AI service is read-only
 - AI provider can be switched between Ollama and Google Gemini
 - Audit service is passive
+- Externalized configuration and credentials
+- Service-to-service authentication for AI communication
+- Auditable AI service requests
 
 ---
 
@@ -349,18 +363,15 @@ requires more resources than typical free-tier hosting provides.
 
 For demonstration purposes, the application can be run locally using Docker Compose or Minikube.
 
-#### Gemini API Key
+#### Configuration & Security
 
-Gemini deployments require a GEMINI_API_KEY.
+Sensitive configuration is externalized from the application source code and provided through environment variables. This includes PostgreSQL credentials, the JWT signing secret, the AI service token, and the Gemini API key.
 
-Create a .env file in the project root:
+For local development, copy `.env.example` to `.env` and provide your own values. The same `.env` file serves as the configuration source for all three deployment methods. Docker Compose reads the values directly, while the Kubernetes and Helm deployment scripts use them to create or update Kubernetes Secrets.
 
-```text
-GEMINI_API_KEY=your_api_key
-```
-Docker Compose reads GEMINI_API_KEY from .env when running the Gemini profile.
+The AI Chat Service uses a dedicated `AI_SERVICE_TOKEN` for service-to-service authentication between the API Gateway and the AI Chat Service. This separates authenticated AI-service communication from ordinary application traffic.
 
-The Kubernetes and Helm Gemini deployment scripts read the same .env file and create/update the Kubernetes gemini-secret.
+AI-related requests are registered by the Audit Service, providing an audit trail of AI service usage.
 
 #### Cleanup
 

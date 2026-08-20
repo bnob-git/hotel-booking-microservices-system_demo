@@ -12,6 +12,8 @@ data:
   OLLAMA_MODEL: "qwen3:4b"
   OLLAMA_TEMPERATURE: "0.2"
 
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+
   BOOKING_SERVICE_URL: "http://booking-service:8082"
   USER_SERVICE_URL: "http://user-service:8081"
   AUDIT_SERVICE_URL: "http://audit-service:8083"

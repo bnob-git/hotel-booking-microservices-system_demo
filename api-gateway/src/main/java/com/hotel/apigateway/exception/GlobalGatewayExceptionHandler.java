@@ -14,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 
@@ -86,9 +87,31 @@ public class GlobalGatewayExceptionHandler
         }
 
         /*
-         * Fallback
+         * Downstream service unavailable
          */
+        if (hasCause(ex, ConnectException.class)) {
+            return HttpStatus.SERVICE_UNAVAILABLE;
+        }
+
         return HttpStatus.INTERNAL_SERVER_ERROR;
+    }
+
+    private boolean hasCause(
+            Throwable exception,
+            Class<? extends Throwable> type) {
+
+        Throwable current = exception;
+
+        while (current != null) {
+
+            if (type.isInstance(current)) {
+                return true;
+            }
+
+            current = current.getCause();
+        }
+
+        return false;
     }
 
     private String determineErrorCode(HttpStatus status) {
@@ -105,7 +128,7 @@ public class GlobalGatewayExceptionHandler
                     "ROUTE_NOT_FOUND";
 
             case SERVICE_UNAVAILABLE ->
-                    "SERVICE_UNAVAILABLE";
+                    "DOWNSTREAM_SERVICE_UNAVAILABLE";
 
             default ->
                     "UNEXPECTED_GATEWAY_ERROR";

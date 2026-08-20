@@ -1,4 +1,4 @@
-{{- if .Values.ai.enabled }}
+{{- if .Values.app.aiEnabled }}
 
 apiVersion: v1
 kind: ConfigMap
@@ -9,6 +9,8 @@ data:
   SERVER_PORT: {{ .Values.aiChatService.serverPort | quote }}
 
   SPRING_PROFILES_ACTIVE: {{ .Values.ai.provider | quote }}
+
+  KAFKA_BOOTSTRAP_SERVERS: {{ .Values.aiChatService.kafkaBootstrapServers | quote }}
 
   BOOKING_SERVICE_URL: {{ .Values.aiChatService.bookingServiceUrl | quote }}
   USER_SERVICE_URL: {{ .Values.aiChatService.userServiceUrl | quote }}
@@ -61,6 +63,13 @@ spec:
                 name: gemini-secret
 
 {{- end }}
+
+          env:
+            - name: AI_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: AI_SERVICE_TOKEN
 
 ---
 

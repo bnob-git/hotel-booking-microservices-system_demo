@@ -14,55 +14,180 @@ if ! minikube status >/dev/null 2>&1; then
     exit 1
 fi
 
+# Check that .env exists
+if [ ! -f .env ]; then
+    echo ".env file not found."
+    echo "Create it from .env.example first."
+    exit 1
+fi
+
 CHART="./helm/hotel-booking"
 RELEASE="hotel-booking"
 
+# Read a value from .env without executing the file.
+get_env_value() {
+    grep "^${1}=" .env | head -n 1 | cut -d '=' -f2-
+}
+
+POSTGRES_USER=$(get_env_value "POSTGRES_USER")
+POSTGRES_PASSWORD=$(get_env_value "POSTGRES_PASSWORD")
+JWT_SECRET=$(get_env_value "JWT_SECRET")
+JWT_EXPIRATION_MINUTES=$(get_env_value "JWT_EXPIRATION_MINUTES")
+AI_ENABLED=$(get_env_value "AI_ENABLED")
+AI_SERVICE_TOKEN=$(get_env_value "AI_SERVICE_TOKEN")
+GEMINI_API_KEY=$(get_env_value "GEMINI_API_KEY")
+
+# Validate common required values
+required_vars=(
+    POSTGRES_USER
+    POSTGRES_PASSWORD
+    JWT_SECRET
+    JWT_EXPIRATION_MINUTES
+    AI_ENABLED
+)
+
+for var in "${required_vars[@]}"; do
+    if [ -z "${!var}" ]; then
+        echo "$var is missing or empty in .env."
+        exit 1
+    fi
+done
+
+# Determine deployment mode
 case "$1" in
 
     --ollama)
         echo "Deploying with Ollama AI..."
 
-        helm upgrade --install "$RELEASE" "$CHART" \
-            --set ai.enabled=true \
-            --set ai.provider=ollama
+        if [ "$AI_ENABLED" != "true" ]; then
+            echo "AI_ENABLED must be true for the Ollama deployment."
+            echo "Set AI_ENABLED=true in .env and run this script again."
+            exit 1
+        fi
+
+        if [ -z "$AI_SERVICE_TOKEN" ]; then
+            echo "AI_SERVICE_TOKEN is missing or empty in .env."
+            exit 1
+        fi
+
+        AI_PROVIDER="ollama"
         ;;
 
     --gemini)
         echo "Deploying with Gemini AI..."
 
-        if [ ! -f .env ]; then
-            echo ".env file not found."
-            echo "Create .env with:"
-            echo "GEMINI_API_KEY=your_api_key"
+        if [ "$AI_ENABLED" != "true" ]; then
+            echo "AI_ENABLED must be true for the Gemini deployment."
+            echo "Set AI_ENABLED=true in .env and run this script again."
             exit 1
         fi
 
-        if ! grep -q '^GEMINI_API_KEY=' .env; then
-            echo "GEMINI_API_KEY not found in .env."
+        if [ -z "$AI_SERVICE_TOKEN" ]; then
+            echo "AI_SERVICE_TOKEN is missing or empty in .env."
             exit 1
         fi
 
-        GEMINI_API_KEY=$(grep '^GEMINI_API_KEY=' .env | cut -d '=' -f2-)
+        if [ -z "$GEMINI_API_KEY" ]; then
+            echo "GEMINI_API_KEY is missing or empty in .env."
+            exit 1
+        fi
 
-        echo "Creating/updating Gemini Secret..."
+        AI_PROVIDER="gemini"
+        ;;
 
-        kubectl create secret generic gemini-secret \
-            --from-literal=GEMINI_API_KEY="$GEMINI_API_KEY" \
-            --dry-run=client \
-            -o yaml | kubectl apply -f -
+    "")
+        echo "Deploying without AI..."
 
-        helm upgrade --install "$RELEASE" "$CHART" \
-            --set ai.enabled=true \
-            --set ai.provider=gemini
+        if [ "$AI_ENABLED" != "false" ]; then
+            echo "AI_ENABLED must be false for the deployment without AI."
+            echo "Set AI_ENABLED=false in .env and run this script again."
+            exit 1
+        fi
+
+        AI_PROVIDER=""
         ;;
 
     *)
-        echo "Deploying without AI..."
-
-        helm upgrade --install "$RELEASE" "$CHART"
+        echo "Unknown option: $1"
+        echo
+        echo "Usage:"
+        echo "    ./scripts/deploy-helm.sh"
+        echo "    ./scripts/deploy-helm.sh --ollama"
+        echo "    ./scripts/deploy-helm.sh --gemini"
+        exit 1
         ;;
 
 esac
+
+# Create common Secrets after deployment mode validation.
+echo "Creating/updating PostgreSQL Secret..."
+
+kubectl create secret generic postgres-secret \
+    --from-literal=POSTGRES_USER="$POSTGRES_USER" \
+    --from-literal=POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+    --dry-run=client \
+    -o yaml | kubectl apply -f -
+
+echo "Creating/updating application Secret..."
+
+if [ "$AI_ENABLED" = "true" ]; then
+
+    kubectl create secret generic app-secret \
+        --from-literal=JWT_SECRET="$JWT_SECRET" \
+        --from-literal=AI_SERVICE_TOKEN="$AI_SERVICE_TOKEN" \
+        --dry-run=client \
+        -o yaml | kubectl apply -f -
+
+else
+
+    kubectl create secret generic app-secret \
+        --from-literal=JWT_SECRET="$JWT_SECRET" \
+        --dry-run=client \
+        -o yaml | kubectl apply -f -
+
+fi
+
+# Gemini requires an additional Secret.
+if [ "$AI_PROVIDER" = "gemini" ]; then
+
+    echo "Creating/updating Gemini Secret..."
+
+    kubectl create secret generic gemini-secret \
+        --from-literal=GEMINI_API_KEY="$GEMINI_API_KEY" \
+        --dry-run=client \
+        -o yaml | kubectl apply -f -
+
+fi
+
+echo "Deploying Helm release..."
+
+if [ "$AI_PROVIDER" = "ollama" ]; then
+
+    helm upgrade --install "$RELEASE" "$CHART" \
+        --set app.aiEnabled="$AI_ENABLED" \
+        --set ai.provider="$AI_PROVIDER" \
+        --set app.jwtExpirationMinutes="$JWT_EXPIRATION_MINUTES" \
+        --wait \
+        --atomic
+
+elif [ "$AI_PROVIDER" = "gemini" ]; then
+
+    helm upgrade --install "$RELEASE" "$CHART" \
+        --set app.aiEnabled="$AI_ENABLED" \
+        --set ai.provider="$AI_PROVIDER" \
+        --set app.jwtExpirationMinutes="$JWT_EXPIRATION_MINUTES" \
+        --wait \
+        --atomic
+
+else
+
+    helm upgrade --install "$RELEASE" "$CHART" \
+        --set app.aiEnabled="$AI_ENABLED" \
+        --set app.jwtExpirationMinutes="$JWT_EXPIRATION_MINUTES" \
+        --wait \
+        --atomic
+
+fi
 
 echo
 echo "Helm release deployed successfully."

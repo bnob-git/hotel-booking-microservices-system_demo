@@ -7,10 +7,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -18,6 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(ChatController.class)
 @Import(com.hotel.aichat.exception.GlobalExceptionHandler.class)
+@TestPropertySource(properties = "AI_SERVICE_TOKEN=test-service-token")
 class ChatControllerTest {
 
     @Autowired
@@ -30,12 +33,15 @@ class ChatControllerTest {
     void shouldReturnChatResponse() throws Exception {
 
         // Arrange
-        when(chatService.ask("Show me all bookings"))
+        when(chatService.ask("Show me all bookings", "milan", "ADMIN"))
                 .thenReturn("There are 6 bookings.");
 
         // Act & Assert
         mockMvc.perform(
                         post("/api/chat")
+                                .header("X-Internal-Service-Token", "test-service-token")
+                                .header("X-Authenticated-User", "milan")
+                                .header("X-Authenticated-Role",  "ADMIN")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                 {
@@ -52,7 +58,7 @@ class ChatControllerTest {
     void shouldReturn429WhenAiRateLimitIsReached() throws Exception {
 
         // Arrange
-        when(chatService.ask(anyString()))
+        when(chatService.ask(anyString(), eq("milan"), eq("ADMIN")))
                 .thenThrow(new AiRateLimitException(
                         "AI usage limit reached. Please try again shortly.",
                         new RuntimeException()
@@ -61,6 +67,9 @@ class ChatControllerTest {
         // Act & Assert
         mockMvc.perform(
                         post("/api/chat")
+                                .header("X-Internal-Service-Token", "test-service-token")
+                                .header("X-Authenticated-User", "milan")
+                                .header("X-Authenticated-Role",  "ADMIN")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                 {

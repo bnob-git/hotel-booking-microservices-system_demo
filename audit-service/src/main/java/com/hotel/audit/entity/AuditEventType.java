@@ -6,5 +6,9 @@ public enum AuditEventType {
     BOOKING_CANCELLED,
     USER_REGISTERED,
     USER_UPDATED,
-    USER_DELETED
+    USER_DELETED,
+    AI_REQUEST,
+    AI_RESPONSE,
+    AI_RATE_LIMITED,
+    AI_ERROR
 }

@@ -1,15 +1,20 @@
 package com.hotel.aichat.service;
 
 import com.google.genai.errors.ClientException;
+import com.hotel.aichat.dto.AuditEventRequest;
+import com.hotel.aichat.dto.AuditEventType;
 import com.hotel.aichat.exception.AiRateLimitException;
+import com.hotel.aichat.kafka.AuditEventProducer;
 import com.hotel.aichat.tools.AuditTools;
 import com.hotel.aichat.tools.BookingTools;
 import com.hotel.aichat.tools.UserTools;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -25,6 +30,7 @@ class ChatServiceTest {
     private UserTools userTools;
     private AuditTools auditTools;
     private ChatMemory chatMemory;
+    private AuditEventProducer auditEventProducer;
 
     private ChatService chatService;
 
@@ -38,6 +44,7 @@ class ChatServiceTest {
         userTools = mock(UserTools.class);
         auditTools = mock(AuditTools.class);
         chatMemory = mock(ChatMemory.class);
+        auditEventProducer = mock(AuditEventProducer.class);
 
         when(chatClientBuilder.build()).thenReturn(chatClient);
 
@@ -46,7 +53,8 @@ class ChatServiceTest {
                 bookingTools,
                 userTools,
                 auditTools,
-                chatMemory
+                chatMemory,
+                auditEventProducer
         );
     }
 
@@ -82,7 +90,9 @@ class ChatServiceTest {
                 .thenReturn("There are 5 bookings.");
 
         String result =
-                chatService.ask("How many bookings are there?");
+                chatService.ask("How many bookings are there?",
+                        "milan",
+                        "ADMIN");
 
         assertEquals("There are 5 bookings.", result);
 
@@ -124,7 +134,36 @@ class ChatServiceTest {
 
         assertThrows(
                 AiRateLimitException.class,
-                () -> chatService.ask("Hello")
+                () -> chatService.ask("Hello", "milan", "ADMIN")
+        );
+
+        ArgumentCaptor<AuditEventRequest> eventCaptor =
+                ArgumentCaptor.forClass(AuditEventRequest.class);
+
+        verify(auditEventProducer, times(2))
+                .send(eventCaptor.capture());
+
+        List<AuditEventRequest> events =
+                eventCaptor.getAllValues();
+
+        assertEquals(
+                AuditEventType.AI_REQUEST,
+                events.get(0).getEventType()
+        );
+
+        assertEquals(
+                AuditEventType.AI_RATE_LIMITED,
+                events.get(1).getEventType()
+        );
+
+        assertEquals(
+                "milan",
+                events.get(0).getActor()
+        );
+
+        assertEquals(
+                "milan",
+                events.get(1).getActor()
         );
     }
 
@@ -159,7 +198,7 @@ class ChatServiceTest {
 
         RuntimeException thrown = assertThrows(
                 RuntimeException.class,
-                () -> chatService.ask("Hello")
+                () -> chatService.ask("Hello", "milan", "ADMIN")
         );
 
         assertSame(exception, thrown);
@@ -169,5 +208,87 @@ class ChatServiceTest {
     void shouldBuildChatClientDuringConstruction() {
 
         verify(chatClientBuilder).build();
+    }
+
+    @Test
+    void shouldPublishAuditEventsForSuccessfulAiRequest() {
+
+        ChatClient.ChatClientRequestSpec requestSpec =
+                mock(ChatClient.ChatClientRequestSpec.class);
+
+        ChatClient.CallResponseSpec responseSpec =
+                mock(ChatClient.CallResponseSpec.class);
+
+        when(chatClient.prompt()).thenReturn(requestSpec);
+
+        when(requestSpec.system(any(String.class)))
+                .thenReturn(requestSpec);
+
+        when(requestSpec.tools(
+                bookingTools,
+                userTools,
+                auditTools
+        )).thenReturn(requestSpec);
+
+        when(requestSpec.advisors(any(Consumer.class)))
+                .thenReturn(requestSpec);
+
+        when(requestSpec.user("How many bookings are there?"))
+                .thenReturn(requestSpec);
+
+        when(requestSpec.call()).thenReturn(responseSpec);
+
+        when(responseSpec.content())
+                .thenReturn("There are 5 bookings.");
+
+        String result = chatService.ask(
+                "How many bookings are there?",
+                "milan",
+                "ADMIN"
+        );
+
+        assertEquals(
+                "There are 5 bookings.",
+                result
+        );
+
+        ArgumentCaptor<AuditEventRequest> eventCaptor =
+                ArgumentCaptor.forClass(AuditEventRequest.class);
+
+        verify(auditEventProducer, times(2))
+                .send(eventCaptor.capture());
+
+        List<AuditEventRequest> events =
+                eventCaptor.getAllValues();
+
+        assertEquals(
+                AuditEventType.AI_REQUEST,
+                events.get(0).getEventType()
+        );
+
+        assertEquals(
+                AuditEventType.AI_RESPONSE,
+                events.get(1).getEventType()
+        );
+
+        assertEquals(
+                "milan",
+                events.get(0).getActor()
+        );
+
+        assertEquals(
+                "milan",
+                events.get(1).getActor()
+        );
+
+        assertEquals(
+                "ai-chat-service",
+                events.get(0).getServiceName()
+        );
+
+        assertEquals(
+                "ai-chat-service",
+                events.get(1).getServiceName()
+        );
     }
 }

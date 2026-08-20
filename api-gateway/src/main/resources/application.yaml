@@ -31,5 +31,9 @@ spring:
                 - Path=/api/chat/**
 
 jwt:
-  secret: ${JWT_SECRET:YourSuperSecretKeyAtLeast32CharsLong123!}
+  secret: ${JWT_SECRET}
   expirationMinutes: ${JWT_EXPIRATION_MINUTES:60}
+
+ai:
+  enabled: ${AI_ENABLED:false}
+  service-token: ${AI_SERVICE_TOKEN}

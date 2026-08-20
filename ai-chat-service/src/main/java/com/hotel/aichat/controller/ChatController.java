@@ -3,10 +3,7 @@ package com.hotel.aichat.controller;
 import com.hotel.aichat.dto.ChatRequest;
 import com.hotel.aichat.dto.ChatResponse;
 import com.hotel.aichat.service.ChatService;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -19,10 +16,13 @@ public class ChatController {
     }
 
     @PostMapping
-    public ChatResponse chat(@RequestBody ChatRequest request) {
+    public ChatResponse chat(
+            @RequestHeader("X-Authenticated-User") String username,
+            @RequestHeader("X-Authenticated-Role") String role,
+            @RequestBody ChatRequest request) {
 
         String answer =
-                chatService.ask(request.message());
+                chatService.ask(request.message(), username, role);
 
         return new ChatResponse(answer);
     }

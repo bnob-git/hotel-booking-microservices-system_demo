@@ -6,6 +6,15 @@ echo "========================================"
 echo "Hotel Booking System Cleanup"
 echo "========================================"
 
+delete_secrets() {
+    echo
+    echo "Removing deployment Secrets..."
+
+    kubectl delete secret postgres-secret --ignore-not-found
+    kubectl delete secret app-secret --ignore-not-found
+    kubectl delete secret gemini-secret --ignore-not-found
+}
+
 wait_for_cleanup() {
     echo
     echo "Waiting for Kubernetes resources to terminate..."
@@ -30,37 +39,40 @@ wait_for_cleanup() {
 }
 
 case "$1" in
+
     k8s)
         echo "Removing Kubernetes manifest deployment..."
-        kubectl delete -R -f k8s/ --ignore-not-found --wait=false
 
-        echo "Removing Gemini Secret..."
-        kubectl delete secret gemini-secret --ignore-not-found
+        kubectl delete -R -f k8s/ \
+            --ignore-not-found \
+            --wait=false
 
+        delete_secrets
         wait_for_cleanup
         ;;
 
     helm)
         echo "Removing Helm release..."
+
         helm uninstall hotel-booking || true
 
-        echo "Removing Gemini Secret..."
-        kubectl delete secret gemini-secret --ignore-not-found
-
+        delete_secrets
         wait_for_cleanup
         ;;
 
     all)
         echo "Removing Helm release..."
+
         helm uninstall hotel-booking || true
 
         echo
         echo "Removing Kubernetes manifest deployment..."
-        kubectl delete -R -f k8s/ --ignore-not-found --wait=false
 
-        echo "Removing Gemini Secret..."
-        kubectl delete secret gemini-secret --ignore-not-found
+        kubectl delete -R -f k8s/ \
+            --ignore-not-found \
+            --wait=false
 
+        delete_secrets
         wait_for_cleanup
         ;;
 
@@ -71,6 +83,7 @@ case "$1" in
         echo "  ./scripts/cleanup.sh all"
         exit 1
         ;;
+
 esac
 
 echo

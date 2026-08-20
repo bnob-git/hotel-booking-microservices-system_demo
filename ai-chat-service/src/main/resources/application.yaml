@@ -2,8 +2,18 @@ spring:
   application:
     name: ai-chat-service
 
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
 server:
   port: ${SERVER_PORT:8084}
+
+ai:
+  service-token: ${AI_SERVICE_TOKEN}
 
 services:
   booking:

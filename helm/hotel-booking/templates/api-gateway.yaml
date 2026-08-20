@@ -5,10 +5,11 @@ metadata:
 
 data:
   USER_SERVICE_URL: {{ .Values.apiGateway.userServiceUrl | quote }}
-
   BOOKING_SERVICE_URL: {{ .Values.apiGateway.bookingServiceUrl | quote }}
-
   AI_CHAT_SERVICE_URL: {{ .Values.apiGateway.aiChatServiceUrl | quote }}
+
+  AI_ENABLED: {{ .Values.app.aiEnabled | quote }}
+  JWT_EXPIRATION_MINUTES: {{ .Values.app.jwtExpirationMinutes | quote }}
 
 ---
 apiVersion: apps/v1
@@ -48,6 +49,13 @@ spec:
                 secretKeyRef:
                   name: app-secret
                   key: JWT_SECRET
+
+            - name: AI_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: AI_SERVICE_TOKEN
+                  optional: true
 
 ---
 apiVersion: v1

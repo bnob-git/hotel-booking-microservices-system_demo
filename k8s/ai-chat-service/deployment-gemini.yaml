@@ -1,44 +1,39 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: api-gateway
+  name: ai-chat-service
 
 spec:
   replicas: 1
 
   selector:
     matchLabels:
-      app: api-gateway
+      app: ai-chat-service
 
   template:
     metadata:
       labels:
-        app: api-gateway
+        app: ai-chat-service
 
     spec:
       containers:
-        - name: api-gateway
+        - name: ai-chat-service
 
-          image: api-gateway:latest
+          image: ai-chat-service:latest
           imagePullPolicy: Never
 
           ports:
-            - containerPort: 8080
+            - containerPort: 8084
 
           envFrom:
             - configMapRef:
-                name: api-gateway-config
+                name: ai-chat-config
+            - secretRef:
+                name: gemini-secret
 
           env:
-            - name: JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: app-secret
-                  key: JWT_SECRET 
-
             - name: AI_SERVICE_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: app-secret
                   key: AI_SERVICE_TOKEN
-                  optional: true

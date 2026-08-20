@@ -13,6 +13,8 @@ data:
 
   SERVER_PORT: {{ .Values.bookingService.serverPort | quote }}
 
+  JWT_EXPIRATION_MINUTES: {{ .Values.app.jwtExpirationMinutes | quote }}
+
 ---
 apiVersion: apps/v1
 kind: Deployment

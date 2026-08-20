@@ -29,19 +29,6 @@ spec:
 
 ---
 apiVersion: v1
-kind: Secret
-
-metadata:
-  name: postgres-secret
-
-type: Opaque
-
-stringData:
-  POSTGRES_USER: {{ .Values.postgres.username | quote }}
-  POSTGRES_PASSWORD: {{ .Values.postgres.password | quote }}
-
----
-apiVersion: v1
 kind: Service
 
 metadata:

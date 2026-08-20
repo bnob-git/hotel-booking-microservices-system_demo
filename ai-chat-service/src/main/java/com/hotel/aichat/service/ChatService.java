@@ -1,45 +1,61 @@
 package com.hotel.aichat.service;
 
+import com.hotel.aichat.dto.AuditEventRequest;
+import com.hotel.aichat.dto.AuditEventType;
 import com.hotel.aichat.exception.AiRateLimitException;
+import com.hotel.aichat.kafka.AuditEventProducer;
 import com.hotel.aichat.tools.AuditTools;
 import com.hotel.aichat.tools.BookingTools;
 import com.hotel.aichat.tools.UserTools;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 @Service
 public class ChatService {
 
-    private final ChatClient chatClient;
+    private static final Logger log =
+            LoggerFactory.getLogger(ChatService.class);
 
+    private final ChatClient chatClient;
     private final BookingTools bookingTools;
     private final UserTools userTools;
     private final AuditTools auditTools;
     private final ChatMemory chatMemory;
+    private final AuditEventProducer auditEventProducer;
 
     public ChatService(
             ChatClient.Builder builder,
             BookingTools bookingTools,
             UserTools userTools,
             AuditTools auditTools,
-            ChatMemory chatMemory
+            ChatMemory chatMemory,
+            AuditEventProducer auditEventProducer
     ) {
 
         this.chatClient = builder.build();
-
         this.bookingTools = bookingTools;
         this.userTools = userTools;
         this.auditTools = auditTools;
         this.chatMemory = chatMemory;
+        this.auditEventProducer = auditEventProducer;
     }
 
-    public String ask(String message) {
+    public String ask(String message, String username, String role) {
+
+        String conversationId = "chat-" + username;
 
         String systemPrompt = """
             You are an AI assistant for a hotel management system.
             
-            The current user is an authenticated administrator.
+            The current authenticated user is %s.
+            The user's role is %s.
 
             You can access hotel management data through tools:
             - bookings
@@ -54,10 +70,17 @@ public class ChatService {
             - For lists of records, use bullet points or tables when appropriate.
             - If the user's request is ambiguous, ask for clarification.
             - Do not reveal internal tool names or implementation details.
-            """;
+            """.formatted(username, role);;
 
+        // Record that an AI operation was requested.
+        publishAuditEvent(
+                AuditEventType.AI_REQUEST,
+                username,
+                role,
+                Map.of("messageLength", message.length()),
+                "AI request started");
         try {
-            return chatClient.prompt()
+            String answer = chatClient.prompt()
                     .system(systemPrompt)
                     .tools(
                             bookingTools,
@@ -65,23 +88,100 @@ public class ChatService {
                             auditTools
                     )
                     .advisors(advisor -> advisor
-                            .param(ChatMemory.CONVERSATION_ID, "admin-chat")
+                            .param(ChatMemory.CONVERSATION_ID, conversationId)
                     )
                     .user(message)
                     .call()
                     .content();
 
+            // Record successful AI operation.
+            publishAuditEvent(
+                    AuditEventType.AI_RESPONSE,
+                    username,
+                    role,
+                    Map.of(
+                            "responseLength",
+                            answer != null ? answer.length() : 0
+                    ),
+                    "AI response generated successfully"
+            );
+
+            return answer;
+
         } catch (RuntimeException e) {
 
             if (hasStatusCode(e, 429)) {
+
+                publishAuditEvent(
+                        AuditEventType.AI_RATE_LIMITED,
+                        username,
+                        role,
+                        Map.of(
+                                "statusCode", 429
+                        ),
+                        "AI provider rate limit reached"
+                );
                 throw new AiRateLimitException(
                         "AI usage limit reached. Please try again shortly.",
                         e
                 );
             }
 
+            publishAuditEvent(
+                    AuditEventType.AI_ERROR,
+                    username,
+                    role,
+                    Map.of("errorType", e.getClass().getSimpleName()),
+                    "AI request failed"
+            );
+
             throw e;
         }
+    }
+
+    private void publishAuditEvent(
+            AuditEventType eventType,
+            String username,
+            String role,
+            Map<String, Object> payload,
+            String message) {
+
+        AuditEventRequest auditEvent = new AuditEventRequest(
+                UUID.randomUUID(),
+                eventType,
+                "ai-chat-service",
+                username,
+                "AI_CHAT",
+                null,
+                payloadWithRole(payload, role),
+                message
+        );
+
+        try {
+
+            auditEventProducer.send(auditEvent);
+
+        } catch (Exception e) {
+
+            log.error(
+                    "Failed to publish AI audit event {} for user {}",
+                    eventType,
+                    username,
+                    e
+            );
+        }
+    }
+
+    private Map<String, Object> payloadWithRole(
+            Map<String, Object> payload,
+            String role) {
+
+        Map<String, Object> result =
+                new HashMap<>(payload);
+
+        result.put("role", role);
+
+        return result;
     }
 
     private boolean hasStatusCode(Throwable exception, int statusCode) {

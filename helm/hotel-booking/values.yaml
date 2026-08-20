@@ -1,14 +1,12 @@
 postgres:
   image: postgres:16
   storage: 5Gi
-  username: postgres
-  password: hotel-password
 
 app:
-  jwtSecret: YourSuperSecretKeyAtLeast32CharsLong123!
+  aiEnabled: false
+  jwtExpirationMinutes: 60
 
 ai:
-  enabled: false
   provider: gemini
 
 kafka:
@@ -46,6 +44,7 @@ aiChatService:
   image: ai-chat-service:latest
   replicas: 1
   serverPort: 8084
+  kafkaBootstrapServers: kafka:9092
   ollamaUrl: http://ollama:11434
   ollamaTemperature: 0.2
   bookingServiceUrl: http://booking-service:8082

@@ -28,5 +28,10 @@ spec:
           envFrom:
             - configMapRef:
                 name: ai-chat-config
-            - secretRef:
-                name: gemini-secret
+
+          env:
+            - name: AI_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: AI_SERVICE_TOKEN
