@@ -40,6 +40,9 @@ public class SecurityConfig {
                         // Public endpoints (login/register)
                         .requestMatchers("/api/auth/**").permitAll()
 
+                        // Actuator health probe
+                        .requestMatchers("/actuator/health/**").permitAll()
+
                         // Internal microservice communication
                         .requestMatchers("/api/users/internal/**").permitAll()
 

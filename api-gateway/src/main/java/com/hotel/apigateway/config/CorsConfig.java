@@ -1,5 +1,6 @@
 package com.hotel.apigateway.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -13,14 +14,19 @@ import java.util.List;
 @Profile("dev")
 public class CorsConfig {
 
+    private final List<String> allowedOrigins;
+
+    public CorsConfig(
+            @Value("${app.cors.allowed-origins}") List<String> allowedOrigins) {
+        this.allowedOrigins = allowedOrigins;
+    }
+
     @Bean
     public CorsWebFilter corsWebFilter() {
 
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOrigins(List.of(
-                "http://localhost:4200"
-        ));
+        config.setAllowedOrigins(allowedOrigins);
 
         config.setAllowedMethods(List.of(
                 "GET",
