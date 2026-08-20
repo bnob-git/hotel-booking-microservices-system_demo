@@ -3,6 +3,7 @@ package com.hotel.userservice.controller;
 import com.hotel.userservice.entity.Role;
 import com.hotel.userservice.entity.User;
 import com.hotel.userservice.security.CustomUserPrincipal;
+import com.hotel.userservice.security.InternalTokenAuthFilter;
 import com.hotel.userservice.security.JwtAuthFilter;
 import com.hotel.userservice.service.UserService;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         controllers = UserController.class,
         excludeFilters = @ComponentScan.Filter(
                 type = FilterType.ASSIGNABLE_TYPE,
-                classes = JwtAuthFilter.class
+                classes = {JwtAuthFilter.class, InternalTokenAuthFilter.class}
         )
 )
 class UserControllerTest {

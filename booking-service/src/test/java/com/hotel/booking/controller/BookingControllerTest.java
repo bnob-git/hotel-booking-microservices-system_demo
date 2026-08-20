@@ -3,6 +3,7 @@ package com.hotel.booking.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hotel.booking.dto.BookingRequest;
 import com.hotel.booking.dto.BookingResponse;
+import com.hotel.booking.security.InternalTokenAuthFilter;
 import com.hotel.booking.security.JwtAuthFilter;
 import com.hotel.booking.service.BookingService;
 import org.junit.jupiter.api.Test;
@@ -34,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         controllers = BookingController.class,
         excludeFilters = @ComponentScan.Filter(
                 type = FilterType.ASSIGNABLE_TYPE,
-                classes = JwtAuthFilter.class
+                classes = {JwtAuthFilter.class, InternalTokenAuthFilter.class}
         )
 )
 class BookingControllerTest {

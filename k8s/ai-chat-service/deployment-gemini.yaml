@@ -37,3 +37,9 @@ spec:
                 secretKeyRef:
                   name: app-secret
                   key: AI_SERVICE_TOKEN
+
+            - name: INTERNAL_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: INTERNAL_SERVICE_TOKEN

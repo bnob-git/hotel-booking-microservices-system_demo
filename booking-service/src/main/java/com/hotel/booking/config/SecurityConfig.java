@@ -1,5 +1,6 @@
 package com.hotel.booking.config;
 
+import com.hotel.booking.security.InternalTokenAuthFilter;
 import com.hotel.booking.security.JwtAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,8 +18,12 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
 
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
+    private final InternalTokenAuthFilter internalTokenAuthFilter;
+
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter,
+                          InternalTokenAuthFilter internalTokenAuthFilter) {
         this.jwtAuthFilter = jwtAuthFilter;
+        this.internalTokenAuthFilter = internalTokenAuthFilter;
     }
 
     @Bean
@@ -42,8 +47,8 @@ public class SecurityConfig {
                         // Rooms: everyone can view rooms
                         .requestMatchers(HttpMethod.GET, "/api/rooms/**").permitAll()
 
-                        // internal microservice communication
-                        .requestMatchers("/api/bookings/internal/**").permitAll()
+                        // internal microservice communication (X-Internal-Token)
+                        .requestMatchers("/api/bookings/internal/**").hasRole("INTERNAL")
 
                         // Rooms: only ADMIN can modify rooms
                         .requestMatchers(HttpMethod.POST, "/api/rooms/**").hasRole("ADMIN")
@@ -59,6 +64,9 @@ public class SecurityConfig {
 
                 // Validate JWT before Spring Security processes authentication
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+
+                // Validate the internal service token on /api/bookings/internal/**
+                .addFilterBefore(internalTokenAuthFilter, UsernamePasswordAuthenticationFilter.class)
 
                 .build();
     }

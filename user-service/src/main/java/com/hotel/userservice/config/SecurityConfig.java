@@ -1,5 +1,6 @@
 package com.hotel.userservice.config;
 
+import com.hotel.userservice.security.InternalTokenAuthFilter;
 import com.hotel.userservice.security.JwtAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,8 +19,12 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
 
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
+    private final InternalTokenAuthFilter internalTokenAuthFilter;
+
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter,
+                          InternalTokenAuthFilter internalTokenAuthFilter) {
         this.jwtAuthFilter = jwtAuthFilter;
+        this.internalTokenAuthFilter = internalTokenAuthFilter;
     }
 
     @Bean
@@ -43,8 +48,8 @@ public class SecurityConfig {
                         // Actuator health probe
                         .requestMatchers("/actuator/health/**").permitAll()
 
-                        // Internal microservice communication
-                        .requestMatchers("/api/users/internal/**").permitAll()
+                        // Internal microservice communication (X-Internal-Token)
+                        .requestMatchers("/api/users/internal/**").hasRole("INTERNAL")
 
                         // Any authenticated user can access their own profile
                         .requestMatchers("/api/users/me").authenticated()
@@ -60,6 +65,9 @@ public class SecurityConfig {
 
                 // Validate JWT before Spring Security processes authentication
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+
+                // Validate the internal service token on /api/users/internal/**
+                .addFilterBefore(internalTokenAuthFilter, UsernamePasswordAuthenticationFilter.class)
 
                 .build();
     }

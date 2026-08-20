@@ -8,3 +8,6 @@ spring:
   jpa:
     hibernate:
       ddl-auto: none
+
+internal:
+  service-token: test-only-internal-service-token
