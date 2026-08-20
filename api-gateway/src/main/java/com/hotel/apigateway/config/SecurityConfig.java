@@ -30,6 +30,8 @@ public class SecurityConfig {
                         // allow preflight requests
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                        .pathMatchers("/actuator/health/**").permitAll()
+
                         .pathMatchers("/api/auth/**").permitAll()
                         .pathMatchers("/api/rooms/**").permitAll()
 

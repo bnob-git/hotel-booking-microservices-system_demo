@@ -1,4 +1,10 @@
 spring:
+  application:
+    name: api-gateway
+
+  profiles:
+    default: dev
+
   cloud:
     gateway:
       server:
@@ -30,6 +36,15 @@ spring:
               predicates:
                 - Path=/api/chat/**
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
 jwt:
   secret: ${JWT_SECRET}
   expirationMinutes: ${JWT_EXPIRATION_MINUTES:60}
@@ -37,3 +52,25 @@ jwt:
 ai:
   enabled: ${AI_ENABLED:false}
   service-token: ${AI_SERVICE_TOKEN}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+management:
+  endpoint:
+    health:
+      show-details: always
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+management:
+  endpoint:
+    health:
+      show-details: never

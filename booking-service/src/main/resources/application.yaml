@@ -2,6 +2,9 @@ spring:
   application:
     name: booking-service
 
+  profiles:
+    default: dev
+
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/booking_db}
     username: ${DB_USERNAME}
@@ -12,17 +15,10 @@ spring:
       initialization-fail-timeout: 60000
 
   jpa:
-    hibernate:
-      ddl-auto: create
-    show-sql: true
     defer-datasource-initialization: true
     properties:
       hibernate:
         format_sql: true
-
-  sql:
-    init:
-      mode: always
 
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
@@ -34,6 +30,15 @@ spring:
 server:
   port: ${SERVER_PORT:8082}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
 jwt:
   secret: ${JWT_SECRET}
   expirationMinutes: ${JWT_EXPIRATION_MINUTES:60}
@@ -41,3 +46,51 @@ jwt:
 services:
   user:
     url: ${USER_SERVICE_URL:http://localhost:8081}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+
+  sql:
+    init:
+      mode: always
+
+  kafka:
+    security:
+      protocol: PLAINTEXT
+
+management:
+  endpoint:
+    health:
+      show-details: always
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  # Once per-service Flyway migrations exist (see docs/CONVENTIONS.md),
+  # ddl-auto becomes `validate` here.
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:none}
+    show-sql: false
+
+  sql:
+    init:
+      mode: never
+
+  kafka:
+    security:
+      protocol: ${KAFKA_SECURITY_PROTOCOL:SASL_SSL}
+    properties:
+      sasl.mechanism: ${KAFKA_SASL_MECHANISM:SCRAM-SHA-512}
+      sasl.jaas.config: ${KAFKA_SASL_JAAS_CONFIG}
