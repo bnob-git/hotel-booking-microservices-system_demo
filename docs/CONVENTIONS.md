@@ -31,6 +31,7 @@ document:
 | `spring.kafka.security.protocol` | `PLAINTEXT` | `${KAFKA_SECURITY_PROTOCOL:SASL_SSL}` |
 | Kafka SASL | not used | `KAFKA_SASL_MECHANISM` (default `SCRAM-SHA-512`) and `KAFKA_SASL_JAAS_CONFIG` (no default) |
 | `management.endpoint.health.show-details` | `always` | `never` |
+| `app.cors.allowed-origins` (api-gateway) | `http://localhost:4200,http://localhost:3000` | `${CORS_ALLOWED_ORIGINS}` (no default) |
 
 Notes:
 

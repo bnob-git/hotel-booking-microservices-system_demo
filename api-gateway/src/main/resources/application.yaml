@@ -59,6 +59,11 @@ spring:
     activate:
       on-profile: dev
 
+# Angular dev server (4200) and the Dockerized frontend (3000).
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:3000}
+
 management:
   endpoint:
     health:
@@ -69,6 +74,10 @@ spring:
   config:
     activate:
       on-profile: prod
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
 
 management:
   endpoint:
