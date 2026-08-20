@@ -2,11 +2,13 @@ package com.hotel.audit.controller;
 
 import com.hotel.audit.entity.AuditEvent;
 import com.hotel.audit.entity.AuditEventType;
+import com.hotel.audit.security.InternalTokenValidator;
 import com.hotel.audit.service.AuditService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -23,7 +25,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AuditController.class)
+@TestPropertySource(properties = "internal.service-token=" + AuditControllerTest.INTERNAL_TOKEN)
 class AuditControllerTest {
+
+    static final String INTERNAL_TOKEN = "test-only-internal-service-token";
 
     @Autowired
     private MockMvc mockMvc;
@@ -43,6 +48,7 @@ class AuditControllerTest {
 
         mockMvc.perform(
                         post("/api/audit/internal")
+                                .header(InternalTokenValidator.HEADER, INTERNAL_TOKEN)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                 {
@@ -84,6 +90,7 @@ class AuditControllerTest {
 
         mockMvc.perform(
                         get("/api/audit/internal/events/recent")
+                                .header(InternalTokenValidator.HEADER, INTERNAL_TOKEN)
                                 .param("limit", "10")
                 )
                 .andExpect(status().isOk())
@@ -114,6 +121,7 @@ class AuditControllerTest {
 
         mockMvc.perform(
                         get("/api/audit/internal/events/by-type/BOOKING_CANCELLED")
+                                .header(InternalTokenValidator.HEADER, INTERNAL_TOKEN)
                                 .param("limit", "10")
                 )
                 .andExpect(status().isOk())
@@ -123,6 +131,23 @@ class AuditControllerTest {
                         .value("BOOKING_CANCELLED"))
                 .andExpect(jsonPath("$[0].message")
                         .value("Booking cancelled"));
+    }
+
+    @Test
+    void shouldRejectInternalRequestWithoutToken() throws Exception {
+
+        mockMvc.perform(get("/api/audit/internal/events/recent"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void shouldRejectInternalRequestWithWrongToken() throws Exception {
+
+        mockMvc.perform(
+                        get("/api/audit/internal/events/recent")
+                                .header(InternalTokenValidator.HEADER, "wrong-token")
+                )
+                .andExpect(status().isUnauthorized());
     }
 
     private AuditEvent createEvent(

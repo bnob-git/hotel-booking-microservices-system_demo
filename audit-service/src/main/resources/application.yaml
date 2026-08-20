@@ -46,6 +46,9 @@ management:
     health:
       show-details: never
 
+internal:
+  service-token: ${INTERNAL_SERVICE_TOKEN}
+
 ---
 spring:
   config:

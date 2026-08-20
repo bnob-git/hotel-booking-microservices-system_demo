@@ -27,6 +27,9 @@ management:
 ai:
   service-token: ${AI_SERVICE_TOKEN}
 
+internal:
+  service-token: ${INTERNAL_SERVICE_TOKEN}
+
 services:
   booking:
     url: ${BOOKING_SERVICE_URL:http://localhost:8082}

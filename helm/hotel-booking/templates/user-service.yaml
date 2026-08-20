@@ -66,6 +66,12 @@ spec:
                   name: app-secret
                   key: JWT_SECRET
 
+            - name: INTERNAL_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: INTERNAL_SERVICE_TOKEN
+
 ---
 apiVersion: v1
 kind: Service

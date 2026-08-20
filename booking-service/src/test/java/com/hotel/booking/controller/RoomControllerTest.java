@@ -33,7 +33,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         controllers = RoomController.class,
         excludeFilters = @ComponentScan.Filter(
                 type = FilterType.ASSIGNABLE_TYPE,
-                classes = com.hotel.booking.security.JwtAuthFilter.class
+                classes = {
+                        com.hotel.booking.security.JwtAuthFilter.class,
+                        com.hotel.booking.security.InternalTokenAuthFilter.class
+                }
         )
 )
 class RoomControllerTest {
