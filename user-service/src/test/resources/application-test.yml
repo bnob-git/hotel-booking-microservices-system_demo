@@ -14,5 +14,10 @@ spring:
     init:
       mode: never
 
+  # Migrations are PostgreSQL-specific; tests keep the Hibernate-generated
+  # H2 schema (see docs/CONVENTIONS.md).
+  flyway:
+    enabled: false
+
 jwt:
   secret: test-only-jwt-secret-key-32-bytes-minimum

@@ -446,7 +446,7 @@ admin123
 
 ### Sample Users
 
-All users loaded from data.sql:
+All users seeded by the user-service Flyway migration `V1__init.sql`:
 
 Password:
 
