@@ -12,6 +12,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -23,6 +24,9 @@ class AuditServiceTest {
     @Mock
     private AuditEventRepository auditEventRepository;
 
+    @Mock
+    private AuditEventWriter auditEventWriter;
+
     @InjectMocks
     private AuditService auditService;
 
@@ -32,8 +36,8 @@ class AuditServiceTest {
         // Arrange
         AuditEvent event = createEvent();
 
-        when(auditEventRepository.save(event))
-                .thenReturn(event);
+        when(auditEventRepository.findById(event.getEventId()))
+                .thenReturn(Optional.empty());
 
         // Act
         AuditEvent result = auditService.saveEvent(event);
@@ -43,7 +47,7 @@ class AuditServiceTest {
         assertNotNull(event.getTimestamp());
         assertEquals(1, event.getVersion());
 
-        verify(auditEventRepository).save(event);
+        verify(auditEventWriter).insert(event);
     }
 
     @Test
@@ -53,8 +57,8 @@ class AuditServiceTest {
         AuditEvent event = createEvent();
         event.setVersion(2);
 
-        when(auditEventRepository.save(event))
-                .thenReturn(event);
+        when(auditEventRepository.findById(event.getEventId()))
+                .thenReturn(Optional.empty());
 
         // Act
         auditService.saveEvent(event);
@@ -62,7 +66,7 @@ class AuditServiceTest {
         // Assert
         assertEquals(2, event.getVersion());
 
-        verify(auditEventRepository).save(event);
+        verify(auditEventWriter).insert(event);
     }
 
     @Test
@@ -82,18 +86,15 @@ class AuditServiceTest {
     }
 
     @Test
-    void shouldReturnExistingEventWhenDuplicateEventIdOccurs() {
+    void shouldSkipInsertWhenEventIdIsAlreadyStored() {
 
         // Arrange
         AuditEvent event = createEvent();
 
         AuditEvent existingEvent = createEvent();
 
-        when(auditEventRepository.save(event))
-                .thenThrow(new DataIntegrityViolationException("Duplicate key"));
-
         when(auditEventRepository.findById(event.getEventId()))
-                .thenReturn(java.util.Optional.of(existingEvent));
+                .thenReturn(Optional.of(existingEvent));
 
         // Act
         AuditEvent result = auditService.saveEvent(event);
@@ -101,8 +102,32 @@ class AuditServiceTest {
         // Assert
         assertSame(existingEvent, result);
 
-        verify(auditEventRepository).save(event);
-        verify(auditEventRepository).findById(event.getEventId());
+        verify(auditEventWriter, never()).insert(any());
+    }
+
+    @Test
+    void shouldReturnExistingEventWhenDuplicateEventIdOccurs() {
+
+        // Arrange
+        AuditEvent event = createEvent();
+
+        AuditEvent existingEvent = createEvent();
+
+        // The pre-check misses because a concurrent delivery inserts in between.
+        when(auditEventRepository.findById(event.getEventId()))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(existingEvent));
+
+        doThrow(new DataIntegrityViolationException("Duplicate key"))
+                .when(auditEventWriter).insert(event);
+
+        // Act
+        AuditEvent result = auditService.saveEvent(event);
+
+        // Assert
+        assertSame(existingEvent, result);
+
+        verify(auditEventRepository, times(2)).findById(event.getEventId());
     }
 
     private AuditEvent createEvent() {
