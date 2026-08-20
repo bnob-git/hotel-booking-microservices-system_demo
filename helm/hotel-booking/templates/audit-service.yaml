@@ -39,6 +39,22 @@ spec:
           ports:
             - containerPort: {{ .Values.auditService.serverPort }}
 
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: {{ .Values.auditService.serverPort }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 6
+
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: {{ .Values.auditService.serverPort }}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 6
+
           envFrom:
             - configMapRef:
                 name: audit-service-config

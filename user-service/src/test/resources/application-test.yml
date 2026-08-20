@@ -1,4 +1,7 @@
 spring:
+  flyway:
+    enabled: false
+
   datasource:
     url: jdbc:h2:mem:usertest
     driver-class-name: org.h2.Driver

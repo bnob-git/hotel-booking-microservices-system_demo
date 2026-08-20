@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { map } from 'rxjs';
 
 import { BookingService } from '../../core/services/booking.service';
 import { Booking } from '../../core/models/booking';
@@ -94,7 +95,7 @@ export class Bookings implements OnInit {
 
     // Choose API call based on role
     const bookings$ = this.userService.isAdmin()
-      ? this.bookingService.getAllBookings()
+      ? this.bookingService.getAllBookings().pipe(map((page) => page.content))
       : this.bookingService.getMyBookings();
 
     bookings$.subscribe({

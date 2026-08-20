@@ -43,6 +43,22 @@ spec:
           ports:
             - containerPort: {{ .Values.userService.serverPort }}
 
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: {{ .Values.userService.serverPort }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 6
+
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: {{ .Values.userService.serverPort }}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 6
+
           envFrom:
             - configMapRef:
                 name: user-service-config
@@ -65,6 +81,18 @@ spec:
                 secretKeyRef:
                   name: app-secret
                   key: JWT_SECRET
+
+            - name: ADMIN_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: ADMIN_USERNAME
+
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: ADMIN_PASSWORD
 
 ---
 apiVersion: v1

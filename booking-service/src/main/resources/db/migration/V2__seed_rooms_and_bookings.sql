@@ -1,6 +1,3 @@
--- =========================
--- ROOMS
--- =========================
 INSERT INTO rooms (name, type, price, available)
 VALUES ('Room 101', 'STANDARD', 60.00, true),
        ('Room 102', 'STANDARD', 65.00, true),
@@ -11,7 +8,8 @@ VALUES ('Room 101', 'STANDARD', 60.00, true),
        ('Suite 301', 'SUITE', 200.00, true),
        ('Suite 302', 'SUITE', 220.00, true),
        ('Penthouse', 'SUITE', 350.00, false),
-       ('Budget Room', 'STANDARD', 50.00, true);
+       ('Budget Room', 'STANDARD', 50.00, true)
+ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO bookings (check_in_date, check_out_date, user_id, room_id)
 VALUES ('2026-12-10', '2026-12-12', 1, 1),

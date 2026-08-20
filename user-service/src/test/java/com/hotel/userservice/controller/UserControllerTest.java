@@ -13,6 +13,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -23,6 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -55,18 +59,23 @@ class UserControllerTest {
 
         user.setId(1L);
 
-        when(userService.getAllUsers())
-                .thenReturn(List.of(user));
+        when(userService.getAllUsers(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(user), PageRequest.of(0, 20), 1));
 
         // Act + Assert
         mockMvc.perform(
                         get("/api/users")
+                                .param("page", "0")
+                                .param("size", "20")
                                 .with(authentication(createAdminAuthentication()))
                 )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[0].username").value("john"))
-                .andExpect(jsonPath("$[0].role").value("USER"));
+                .andExpect(jsonPath("$.content[0].id").value(1))
+                .andExpect(jsonPath("$.content[0].username").value("john"))
+                .andExpect(jsonPath("$.content[0].role").value("USER"))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(20))
+                .andExpect(jsonPath("$.totalElements").value(1));
     }
 
     @Test

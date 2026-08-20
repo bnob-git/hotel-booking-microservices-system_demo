@@ -36,6 +36,9 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
+                        // Actuator probes and metrics scraping
+                        .requestMatchers("/actuator/**").permitAll()
+
                         // Rooms: everyone can view rooms
                         .requestMatchers(HttpMethod.GET, "/api/rooms/**").permitAll()
 

@@ -2,7 +2,11 @@ package com.hotel.booking.controller;
 
 import com.hotel.booking.dto.BookingRequest;
 import com.hotel.booking.dto.BookingResponse;
+import com.hotel.booking.dto.PageResponse;
 import com.hotel.booking.service.BookingService;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -22,13 +26,15 @@ public class BookingController {
     // Get all bookings
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public List<BookingResponse> getAllBookings() {
-        return bookingService.getAllBookings();
+    public PageResponse<BookingResponse> getAllBookings(
+            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.ASC) Pageable pageable
+    ) {
+        return PageResponse.from(bookingService.getAllBookings(pageable));
     }
 
     @GetMapping("/internal/all")
     public List<BookingResponse> getAllBookingsInternal() {
-        return bookingService.getAllBookings();
+        return bookingService.getAllBookings(Pageable.unpaged()).getContent();
     }
 
     // Get booking by ID

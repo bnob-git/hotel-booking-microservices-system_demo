@@ -37,6 +37,9 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
+                        // Actuator probes and metrics scraping
+                        .requestMatchers("/actuator/**").permitAll()
+
                         // Public endpoints (login/register)
                         .requestMatchers("/api/auth/**").permitAll()
 

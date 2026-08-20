@@ -49,7 +49,7 @@ export class Admin implements OnInit {
   // ================= USERS =================
 
   fetchUsers() {
-    this.userService.getAllUsers().subscribe((users) => this.users.set(users));
+    this.userService.getAllUsers().subscribe((page) => this.users.set(page.content));
   }
 
   openUserDialog(user?: UserResponse) {

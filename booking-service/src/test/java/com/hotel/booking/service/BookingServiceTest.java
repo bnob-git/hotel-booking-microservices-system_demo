@@ -15,6 +15,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.server.ResponseStatusException;
@@ -67,6 +71,46 @@ class BookingServiceTest {
         );
 
         room.setId(1L);
+    }
+
+    @Test
+    void shouldReturnBookingsPage() {
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 2);
+
+        Booking booking = new Booking(
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
+                room.getId(),
+                user.getId()
+        );
+
+        BookingResponse response = new BookingResponse(
+                1L,
+                user.getId(),
+                room.getId(),
+                "testuser",
+                "Test Room",
+                booking.getCheckInDate(),
+                booking.getCheckOutDate()
+        );
+
+        when(bookingRepository.findAll(pageable))
+                .thenReturn(new PageImpl<>(List.of(booking), pageable, 5));
+
+        when(bookingMapper.toResponse(booking))
+                .thenReturn(response);
+
+        // Act
+        Page<BookingResponse> page = bookingService.getAllBookings(pageable);
+
+        // Assert
+        assertEquals(1, page.getContent().size());
+        assertEquals(response, page.getContent().get(0));
+        assertEquals(5, page.getTotalElements());
+        assertEquals(3, page.getTotalPages());
+
+        verify(bookingRepository).findAll(pageable);
     }
 
     @Test

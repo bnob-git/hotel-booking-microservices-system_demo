@@ -46,7 +46,6 @@ export class ChatComponent {
 
     this.chatService.sendMessage(message, token).subscribe({
       next: (res) => {
-        console.log('AI response:', res);
         // Replace ONLY this specific loading message
         const msgs = this.chatService.getMessages();
         const index = msgs.indexOf(loadingMsg);
