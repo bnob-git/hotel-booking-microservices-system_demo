@@ -41,7 +41,8 @@ public class InternalTokenAuthFilter extends OncePerRequestFilter {
                 request.getHeader(InternalTokenValidator.HEADER);
 
         if (!tokenValidator.matches(providedToken)) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.flushBuffer();
             return;
         }
 
