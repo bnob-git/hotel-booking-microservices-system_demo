@@ -8,3 +8,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: none
+
+  # V1__init.sql is PostgreSQL-specific (jsonb, typed check constraint);
+  # tests keep using src/test/resources/schema.sql on H2.
+  flyway:
+    enabled: false

@@ -19,6 +19,14 @@ spring:
       hibernate:
         format_sql: true
 
+  # Flyway owns the schema; Hibernate only validates it.
+  # baseline-on-migrate lets databases created by the previous `ddl-auto: create`
+  # behavior adopt the baseline instead of failing on a non-empty schema.
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 
@@ -54,12 +62,12 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: validate
     show-sql: true
 
   sql:
     init:
-      mode: always
+      mode: never
 
   kafka:
     security:
@@ -76,11 +84,9 @@ spring:
     activate:
       on-profile: prod
 
-  # Once per-service Flyway migrations exist (see docs/CONVENTIONS.md),
-  # ddl-auto becomes `validate` here.
   jpa:
     hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:none}
+      ddl-auto: validate
     show-sql: false
 
   sql:
