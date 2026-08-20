@@ -15,7 +15,6 @@ spring:
       initialization-fail-timeout: 60000
 
   jpa:
-    defer-datasource-initialization: true
     properties:
       hibernate:
         format_sql: true
@@ -55,12 +54,12 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: validate
     show-sql: true
 
   sql:
     init:
-      mode: always
+      mode: never
 
   kafka:
     security:
@@ -77,11 +76,11 @@ spring:
     activate:
       on-profile: prod
 
-  # Once per-service Flyway migrations exist (see docs/CONVENTIONS.md),
-  # ddl-auto becomes `validate` here.
+  # Flyway owns the schema (src/main/resources/db/migration); Hibernate only
+  # validates it (see docs/CONVENTIONS.md).
   jpa:
     hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:none}
+      ddl-auto: validate
     show-sql: false
 
   sql:
