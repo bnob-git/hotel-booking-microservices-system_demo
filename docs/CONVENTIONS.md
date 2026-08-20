@@ -92,11 +92,24 @@ agreed mechanism is a shared internal service token:
 - **Env var:** `INTERNAL_SERVICE_TOKEN` (no baked-in default; services must fail
   fast if it is missing when the check is enabled)
 - **Config key:** `internal.service-token: ${INTERNAL_SERVICE_TOKEN}`
-- **Senders:** `user-service`, `ai-chat-service` — attach the header on every
-  Feign call to an internal endpoint via a `RequestInterceptor`.
-- **Receivers:** `booking-service` (`/api/bookings/internal/**`) and
-  `user-service` (`/api/users/internal/**`) — validate the header on internal
-  endpoints and reject with `401` when it is absent or does not match.
+- **Senders** — attach the header on every Feign call to an internal endpoint
+  via a `RequestInterceptor`:
+
+  | Sender | Calls |
+  | ------ | ----- |
+  | `user-service` | `booking-service` `/api/bookings/internal/**` |
+  | `booking-service` | `user-service` `/api/users/internal/**` |
+  | `ai-chat-service` | `user-service`, `booking-service` and `audit-service` internal endpoints |
+
+- **Receivers** — validate the header on their internal endpoints and reject
+  with `401` when it is absent or does not match:
+  `user-service` (`/api/users/internal/**`),
+  `booking-service` (`/api/bookings/internal/**`),
+  `audit-service` (`/api/audit/internal/**`).
+
+Because every internal endpoint currently has `permitAll()`, sender and
+receiver changes must land together in one change; a receiver that starts
+enforcing before its senders send the header breaks the stack.
 
 Rules:
 
