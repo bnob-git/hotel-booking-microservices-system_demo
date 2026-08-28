@@ -14,7 +14,7 @@ public class UserLookupService {
         this.userClient = userClient;
     }
 
-    @Cacheable("users")
+    @Cacheable(value = "users", unless = "#result == null")
     public UserResponse getUserById(Long id) {
         return userClient.getUserById(id);
     }

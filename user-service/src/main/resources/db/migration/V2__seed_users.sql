@@ -1,5 +1,5 @@
 -- Demo users (the bootstrap admin is created by the application from admin.username/admin.password).
--- Password for every seeded user: user123
+-- Password for every seeded user: password
 INSERT INTO users (username, password, role)
 VALUES ('demo', '$2a$10$ljwIPHLqr/VDtOQGEsGyueLwBkWg2zDy1kVp3VKJOCJehg3C7HNe6', 'USER'),
        ('alice', '$2a$10$ItpLgDoFfNVdUwnu7ZeosucNkZfzPbM5q0BRjPG5/fmllb0xP47kq', 'USER'),

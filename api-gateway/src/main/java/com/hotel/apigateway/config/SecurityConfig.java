@@ -30,7 +30,8 @@ public class SecurityConfig {
                         // allow preflight requests
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        .pathMatchers("/actuator/**").permitAll()
+                        // Probes are public; metrics stay behind authentication
+                        .pathMatchers("/actuator/health/**", "/actuator/info").permitAll()
                         .pathMatchers("/api/auth/**").permitAll()
                         .pathMatchers("/api/rooms/**").permitAll()
 

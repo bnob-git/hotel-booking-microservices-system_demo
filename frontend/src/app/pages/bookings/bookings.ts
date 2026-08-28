@@ -2,7 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { map } from 'rxjs';
+import { EMPTY, expand, reduce } from 'rxjs';
 
 import { BookingService } from '../../core/services/booking.service';
 import { Booking } from '../../core/models/booking';
@@ -95,7 +95,7 @@ export class Bookings implements OnInit {
 
     // Choose API call based on role
     const bookings$ = this.userService.isAdmin()
-      ? this.bookingService.getAllBookings().pipe(map((page) => page.content))
+      ? this.loadAllBookings()
       : this.bookingService.getMyBookings();
 
     bookings$.subscribe({
@@ -110,6 +110,18 @@ export class Bookings implements OnInit {
         this.loading.set(false);
       },
     });
+  }
+
+  // Walks every page so admins keep seeing the full list
+  private loadAllBookings() {
+    const size = 50;
+
+    return this.bookingService.getAllBookings(0, size).pipe(
+      expand((page) =>
+        page.last ? EMPTY : this.bookingService.getAllBookings(page.page + 1, size),
+      ),
+      reduce((all, page) => all.concat(page.content), [] as BookingResponse[]),
+    );
   }
 
   // ================= FORM UPDATES =================
