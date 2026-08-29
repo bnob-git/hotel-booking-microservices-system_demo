@@ -5,6 +5,7 @@ import { Observable, tap } from 'rxjs';
 import { API } from '../config/api.config';
 import { Router } from '@angular/router';
 import { ChatService } from './chat.service';
+import { PageResponse } from '../models/page-response';
 import { UserResponse } from '../models/user-response';
 import { AuthResponse } from '../models/auth-response';
 import { RegisterRequest } from '../models/register-request';
@@ -165,8 +166,10 @@ export class UserService {
   // -------------------
   // CRUD methods
   // -------------------
-  getAllUsers(): Observable<UserResponse[]> {
-    return this.http.get<UserResponse[]>(this.apiUrl);
+  getAllUsers(page = 0, size = 20): Observable<PageResponse<UserResponse>> {
+    return this.http.get<PageResponse<UserResponse>>(this.apiUrl, {
+      params: { page, size },
+    });
   }
 
   getUserById(id: number): Observable<UserResponse> {

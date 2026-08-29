@@ -13,6 +13,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -63,19 +66,22 @@ class BookingControllerTest {
                 LocalDate.of(2026, 8, 13)
         );
 
-        when(bookingService.getAllBookings())
-                .thenReturn(List.of(response));
+        when(bookingService.getAllBookings(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(response), PageRequest.of(0, 20), 1));
 
         // Act + Assert
-        mockMvc.perform(get("/api/bookings"))
+        mockMvc.perform(get("/api/bookings").param("page", "0").param("size", "20"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[0].userId").value(10))
-                .andExpect(jsonPath("$[0].roomId").value(20))
-                .andExpect(jsonPath("$[0].username").value("testuser"))
-                .andExpect(jsonPath("$[0].roomName").value("Test Room"));
+                .andExpect(jsonPath("$.content[0].id").value(1))
+                .andExpect(jsonPath("$.content[0].userId").value(10))
+                .andExpect(jsonPath("$.content[0].roomId").value(20))
+                .andExpect(jsonPath("$.content[0].username").value("testuser"))
+                .andExpect(jsonPath("$.content[0].roomName").value("Test Room"))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(20))
+                .andExpect(jsonPath("$.totalElements").value(1));
 
-        verify(bookingService).getAllBookings();
+        verify(bookingService).getAllBookings(any(Pageable.class));
     }
 
     @Test

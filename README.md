@@ -428,9 +428,59 @@ kubectl get ingress
 helm list
 ```
 
+## Configuration
+
+### Environment Variables
+
+See `.env.example` for the full list. Variables added for security and observability:
+
+| Variable                             | Default                              | Description                                                   |
+| ------------------------------------ | ------------------------------------ | ------------------------------------------------------------- |
+| `ADMIN_USERNAME`                     | `admin`                              | Bootstrap admin created by user-service on startup            |
+| `ADMIN_PASSWORD`                     | `admin123` (local dev only)          | Bootstrap admin password; leave empty to skip admin creation  |
+| `AUTH_LOCKOUT_MAX_ATTEMPTS`          | `5`                                  | Failed logins per username before a `429` lockout             |
+| `AUTH_LOCKOUT_DURATION_MINUTES`      | `15`                                 | Lockout window                                                |
+| `JPA_SHOW_SQL`                       | `false`                              | Enables SQL logging (development only)                        |
+| `TRACING_ENABLED`                    | `false`                              | Enables OTLP trace export                                     |
+| `TRACING_SAMPLING_PROBABILITY`       | `0.1`                                | Trace sampling probability                                    |
+| `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | `http://localhost:4318/v1/traces`    | OTLP traces endpoint                                          |
+
+In Kubernetes, `ADMIN_USERNAME` and `ADMIN_PASSWORD` are read from the `app-secret` secret.
+
+### Database Migrations
+
+Schemas are managed by Flyway instead of Hibernate DDL generation. Every JPA service runs
+with `spring.jpa.hibernate.ddl-auto: validate` and applies the migrations in
+`src/main/resources/db/migration` on startup (`V1__init.sql` for the schema, `V2__seed_*.sql`
+for demo data). Add new schema changes as a new versioned migration; never edit an applied one.
+
+### Actuator Endpoints
+
+Every backend service exposes `health`, `info` and `prometheus`:
+
+```text
+/actuator/health
+/actuator/health/liveness
+/actuator/health/readiness
+/actuator/info
+/actuator/prometheus
+```
+
+The liveness/readiness endpoints back the Kubernetes and Helm probes, and Prometheus can scrape
+`/actuator/prometheus`. Distributed tracing (Micrometer Tracing + OTLP) is enabled with
+`TRACING_ENABLED=true`.
+
+### Pagination
+
+`GET /api/users` and `GET /api/bookings` are paginated and accept `page`, `size` and `sort`
+request parameters, returning `{ content, page, size, totalElements, totalPages, last }`.
+
 ## Default Credentials
 
 ### Administrator
+
+The bootstrap admin is created from `ADMIN_USERNAME` / `ADMIN_PASSWORD`. With the local-dev
+defaults these are:
 
 Username:
 
@@ -444,9 +494,11 @@ Password:
 admin123
 ```
 
+Set both variables to real values outside local development.
+
 ### Sample Users
 
-All users loaded from data.sql:
+All users loaded from the seed migration:
 
 Password:
 

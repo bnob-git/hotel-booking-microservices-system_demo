@@ -8,7 +8,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
-@FeignClient(name = "audit-service", url = "${services.audit.url}")
+@FeignClient(
+        name = "audit-service",
+        url = "${services.audit.url}",
+        fallbackFactory = AuditClientFallbackFactory.class
+)
 public interface AuditClient {
 
     @GetMapping("/api/audit/internal/events/recent")

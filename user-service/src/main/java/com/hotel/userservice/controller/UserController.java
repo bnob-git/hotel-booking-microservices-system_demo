@@ -1,11 +1,15 @@
 package com.hotel.userservice.controller;
 
+import com.hotel.userservice.dto.PageResponse;
 import com.hotel.userservice.dto.UpdateUserRequest;
 import com.hotel.userservice.dto.UserResponse;
 import com.hotel.userservice.entity.User;
 import com.hotel.userservice.security.CustomUserPrincipal;
 import com.hotel.userservice.service.UserService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -38,19 +42,19 @@ public class UserController {
     // =========================
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public List<UserResponse> getAllUsers() {
-        return userService.getAllUsers()
-                .stream()
-                .map(this::mapToResponse)
-                .toList();
+    public PageResponse<UserResponse> getAllUsers(
+            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.ASC) Pageable pageable
+    ) {
+        return PageResponse.from(
+                userService.getAllUsers(pageable).map(this::mapToResponse)
+        );
     }
 
     @GetMapping("/internal/all")
     public List<UserResponse> getAllUsersInternal() {
-        return userService.getAllUsers()
-                .stream()
+        return userService.getAllUsers(Pageable.unpaged())
                 .map(this::mapToResponse)
-                .toList();
+                .getContent();
     }
 
     // =========================

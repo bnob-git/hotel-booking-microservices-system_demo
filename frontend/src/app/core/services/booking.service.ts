@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { API } from '../config/api.config';
 
 import { BookingResponse } from '../models/booking-response';
+import { PageResponse } from '../models/page-response';
 import { BookingRequest } from '../models/booking-request';
 
 @Injectable({
@@ -17,8 +18,10 @@ export class BookingService {
   // =========================
   // GET ALL BOOKINGS
   // =========================
-  getAllBookings(): Observable<BookingResponse[]> {
-    return this.http.get<BookingResponse[]>(this.apiUrl);
+  getAllBookings(page = 0, size = 20): Observable<PageResponse<BookingResponse>> {
+    return this.http.get<PageResponse<BookingResponse>>(this.apiUrl, {
+      params: { page, size },
+    });
   }
 
   // =========================

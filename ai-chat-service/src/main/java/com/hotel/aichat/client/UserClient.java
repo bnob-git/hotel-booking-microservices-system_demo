@@ -7,7 +7,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
 
-@FeignClient(name = "user-service", url = "${services.user.url}")
+@FeignClient(
+        name = "user-service",
+        url = "${services.user.url}",
+        fallbackFactory = UserClientFallbackFactory.class
+)
 public interface UserClient {
 
     @GetMapping("/api/users/internal/all")

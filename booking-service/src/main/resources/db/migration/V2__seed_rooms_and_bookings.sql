@@ -1,6 +1,3 @@
--- =========================
--- ROOMS
--- =========================
 INSERT INTO rooms (name, type, price, available)
 VALUES ('Room 101', 'STANDARD', 60.00, true),
        ('Room 102', 'STANDARD', 65.00, true),
@@ -11,12 +8,15 @@ VALUES ('Room 101', 'STANDARD', 60.00, true),
        ('Suite 301', 'SUITE', 200.00, true),
        ('Suite 302', 'SUITE', 220.00, true),
        ('Penthouse', 'SUITE', 350.00, false),
-       ('Budget Room', 'STANDARD', 50.00, true);
+       ('Budget Room', 'STANDARD', 50.00, true)
+ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO bookings (check_in_date, check_out_date, user_id, room_id)
-VALUES ('2026-12-10', '2026-12-12', 1, 1),
-       ('2026-12-15', '2026-12-18', 2, 2),
-       ('2026-12-20', '2026-12-22', 3, 3),
-       ('2026-12-28', '2027-01-02', 4, 7),
-       ('2027-01-05', '2027-01-08', 5, 8),
-       ('2027-01-15', '2027-01-18', 1, 4);
+SELECT *
+FROM (VALUES ('2026-12-10'::date, '2026-12-12'::date, 1::bigint, 1::bigint),
+             ('2026-12-15', '2026-12-18', 2, 2),
+             ('2026-12-20', '2026-12-22', 3, 3),
+             ('2026-12-28', '2027-01-02', 4, 7),
+             ('2027-01-05', '2027-01-08', 5, 8),
+             ('2027-01-15', '2027-01-18', 1, 4)) AS seed
+WHERE NOT EXISTS (SELECT 1 FROM bookings);

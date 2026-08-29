@@ -9,6 +9,7 @@ import com.hotel.userservice.kafka.AuditEventProducer;
 import com.hotel.userservice.repository.UserRepository;
 import com.hotel.userservice.security.CustomUserPrincipal;
 import com.hotel.userservice.security.JwtService;
+import com.hotel.userservice.security.LoginAttemptService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,7 +50,10 @@ class AuthServiceTest {
                 userRepository,
                 passwordEncoder,
                 jwtService,
-                auditEventProducer
+                auditEventProducer,
+                new LoginAttemptService(3, 15),
+                "admin",
+                "admin123"
         );
     }
 
@@ -287,6 +291,79 @@ class AuthServiceTest {
 
         verify(jwtService, never())
                 .generateToken(anyLong(), anyString(), anyString());
+    }
+
+    @Test
+    void shouldRejectLoginWithUnknownUsernameUsingTheSameResponseAsAWrongPassword() {
+
+        // Arrange
+        when(userRepository.findByUsername("ghost"))
+                .thenReturn(Optional.empty());
+
+        LoginRequest request =
+                new LoginRequest("ghost", "password123");
+
+        // Act + Assert
+        ResponseStatusException exception =
+                assertThrows(
+                        ResponseStatusException.class,
+                        () -> authService.login(request)
+                );
+
+        assertEquals(401, exception.getStatusCode().value());
+        assertEquals("Invalid credentials", exception.getReason());
+
+        verify(jwtService, never())
+                .generateToken(anyLong(), anyString(), anyString());
+    }
+
+    @Test
+    void shouldLockAccountAfterTooManyFailedLoginAttempts() {
+
+        // Arrange
+        when(userRepository.findByUsername("john"))
+                .thenReturn(Optional.empty());
+
+        LoginRequest request =
+                new LoginRequest("john", "wrongPassword");
+
+        for (int i = 0; i < 3; i++) {
+            assertThrows(
+                    ResponseStatusException.class,
+                    () -> authService.login(request)
+            );
+        }
+
+        // Act + Assert
+        ResponseStatusException exception =
+                assertThrows(
+                        ResponseStatusException.class,
+                        () -> authService.login(request)
+                );
+
+        assertEquals(429, exception.getStatusCode().value());
+    }
+
+    @Test
+    void shouldSkipAdminBootstrapWhenCredentialsAreNotConfigured() {
+
+        // Arrange
+        AuthService serviceWithoutAdmin = new AuthService(
+                userRepository,
+                passwordEncoder,
+                jwtService,
+                auditEventProducer,
+                new LoginAttemptService(3, 15),
+                "",
+                ""
+        );
+
+        // Act
+        serviceWithoutAdmin.initAdminUser();
+
+        // Assert
+        verify(userRepository, never()).findByUsername(anyString());
+        verify(userRepository, never()).save(any(User.class));
     }
 
     // =========================================================

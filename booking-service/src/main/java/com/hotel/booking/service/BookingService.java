@@ -12,6 +12,8 @@ import com.hotel.booking.repository.BookingRepository;
 import com.hotel.booking.security.CustomUserPrincipal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -48,12 +50,10 @@ public class BookingService {
 
     // ================= READ =================
 
-    public List<BookingResponse> getAllBookings() {
+    public Page<BookingResponse> getAllBookings(Pageable pageable) {
 
-        return bookingRepository.findAll()
-                .stream()
-                .map(bookingMapper::toResponse)
-                .toList();
+        return bookingRepository.findAll(pageable)
+                .map(bookingMapper::toResponse);
     }
 
     @PreAuthorize("hasRole('ADMIN') or @bookingService.isOwner(#id, authentication.principal.id)")

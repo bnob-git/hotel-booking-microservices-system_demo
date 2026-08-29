@@ -10,6 +10,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { UserResponse } from '../../core/models/user-response';
+import { EMPTY, expand, reduce } from 'rxjs';
 
 @Component({
   selector: 'app-admin',
@@ -49,7 +50,17 @@ export class Admin implements OnInit {
   // ================= USERS =================
 
   fetchUsers() {
-    this.userService.getAllUsers().subscribe((users) => this.users.set(users));
+    this.loadAllUsers().subscribe((users) => this.users.set(users));
+  }
+
+  // Walks every page so admins keep seeing the full list
+  private loadAllUsers() {
+    const size = 50;
+
+    return this.userService.getAllUsers(0, size).pipe(
+      expand((page) => (page.last ? EMPTY : this.userService.getAllUsers(page.page + 1, size))),
+      reduce((all, page) => all.concat(page.content), [] as UserResponse[]),
+    );
   }
 
   openUserDialog(user?: UserResponse) {
