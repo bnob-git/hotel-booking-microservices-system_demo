@@ -10,5 +10,7 @@ public enum AuditEventType {
     AI_REQUEST,
     AI_RESPONSE,
     AI_RATE_LIMITED,
-    AI_ERROR
+    AI_ERROR,
+
+    TRANSACTIONS_INQUIRED
 }

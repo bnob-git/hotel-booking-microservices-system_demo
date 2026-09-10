@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: transaction-service
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+server:
+  port: ${SERVER_PORT:8089}
+
+jwt:
+  secret: ${JWT_SECRET}
+  expirationMinutes: ${JWT_EXPIRATION_MINUTES:60}
+
+mainframe:
+  mode: ${MAINFRAME_MODE:STUB}
+  mq:
+    host: ${MQ_HOST:localhost}
+    port: ${MQ_PORT:1414}
+    queue-manager: ${MQ_QUEUE_MANAGER:DEV.QM}
+    request-queue: ${MQ_REQUEST_QUEUE:COBOL.FIN.REQ}
+    response-queue: ${MQ_RESPONSE_QUEUE:COBOL.FIN.RSP}
+  request-timeout-ms: ${REQUEST_TIMEOUT_MS:2500}
