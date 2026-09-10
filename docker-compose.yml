@@ -98,6 +98,19 @@ services:
     networks:
       - hotel-net
 
+  customer-service:
+    build:
+      context: ./customer-service
+    container_name: customer-service
+    restart: unless-stopped
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MAINFRAME_MODE: STUB
+    networks:
+      - hotel-net
+
   ollama:
     image: ollama/ollama
     container_name: ollama
@@ -180,9 +193,11 @@ services:
       USER_SERVICE_URL: http://user-service:8081
       BOOKING_SERVICE_URL: http://booking-service:8082
       AI_CHAT_SERVICE_URL: http://ai-chat-service:8084
+      CUSTOMER_SERVICE_URL: http://customer-service:8087
     depends_on:
       - user-service
       - booking-service
+      - customer-service
     ports:
       - "8080:8080"
     networks:

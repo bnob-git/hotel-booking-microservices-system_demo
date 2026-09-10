@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: customer-service
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+server:
+  port: ${SERVER_PORT:8087}
+
+jwt:
+  secret: ${JWT_SECRET}
+  expirationMinutes: ${JWT_EXPIRATION_MINUTES:60}
+
+mainframe:
+  mode: ${MAINFRAME_MODE:STUB}
+  cics:
+    host: ${CICS_HOST:localhost}
+    port: ${CICS_PORT:3000}
+  request-timeout-ms: ${REQUEST_TIMEOUT_MS:2500}
