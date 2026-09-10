@@ -30,6 +30,11 @@ spring:
               predicates:
                 - Path=/api/chat/**
 
+            - id: transaction-service
+              uri: ${TRANSACTION_SERVICE_URL:http://localhost:8089}
+              predicates:
+                - Path=/api/transactions/**
+
 jwt:
   secret: ${JWT_SECRET}
   expirationMinutes: ${JWT_EXPIRATION_MINUTES:60}
