@@ -101,6 +101,20 @@ class AccountServiceTest {
     }
 
     @Test
+    void shouldReturnBadGatewayWhenCopybookReturnCodeIsUnknown() {
+
+        when(mainframeClient.inquire(any()))
+                .thenReturn(new AccountInquiryResponse("96", "", "", "", ""));
+
+        assertThatThrownBy(() -> accountService.getAccount("10004567", "alice"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.BAD_GATEWAY));
+
+        verifyNoInteractions(auditEventProducer);
+    }
+
+    @Test
     void shouldMapMainframeTimeoutToGatewayTimeout() {
 
         when(mainframeClient.inquire(any()))

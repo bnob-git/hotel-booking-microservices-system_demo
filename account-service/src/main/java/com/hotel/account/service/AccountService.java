@@ -62,6 +62,13 @@ public class AccountService {
             );
         }
 
+        if (!AccountInquiryResponse.RC_OK.equals(copybook.returnCode())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "MF_ERROR: Mainframe returned code " + copybook.returnCode()
+            );
+        }
+
         AccountResponse response = accountMapper.toResponse(copybook, mainframeClient.backendName());
 
         publishAudit(response, actor);
