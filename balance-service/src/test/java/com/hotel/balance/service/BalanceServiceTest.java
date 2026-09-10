@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -51,6 +52,7 @@ class BalanceServiceTest {
         when(mainframeClient.inquire(any()))
                 .thenReturn(new BalanceInquiryResponse("00", "10004567    ", AVAILABLE, LEDGER, "USD"));
         when(mainframeClient.backendName()).thenReturn("STUB_CICS_BALINQ");
+        when(auditEventProducer.send(any())).thenReturn(CompletableFuture.completedFuture(null));
 
         // Act
         BalanceResponse response = balanceService.getBalance("10004567", "alice");
@@ -110,6 +112,22 @@ class BalanceServiceTest {
     }
 
     @Test
+    void shouldReturnBadGatewayWhenCopybookReturnCodeIsUnexpected() {
+
+        // Arrange
+        when(mainframeClient.inquire(any()))
+                .thenReturn(new BalanceInquiryResponse("12", "", null, null, ""));
+
+        // Act / Assert
+        assertThatThrownBy(() -> balanceService.getBalance("10004567", "alice"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.BAD_GATEWAY));
+
+        verifyNoInteractions(auditEventProducer);
+    }
+
+    @Test
     void shouldMapMainframeTimeoutToGatewayTimeout() {
 
         // Arrange
@@ -131,6 +149,23 @@ class BalanceServiceTest {
                 .thenReturn(new BalanceInquiryResponse("00", "10004567", AVAILABLE, LEDGER, "USD"));
         when(mainframeClient.backendName()).thenReturn("STUB_CICS_BALINQ");
         doThrow(new RuntimeException("kafka down")).when(auditEventProducer).send(any());
+
+        // Act
+        BalanceResponse response = balanceService.getBalance("10004567", "alice");
+
+        // Assert
+        assertThat(response.accountId()).isEqualTo("10004567");
+    }
+
+    @Test
+    void shouldNotFailRequestWhenAuditDeliveryFailsAsynchronously() {
+
+        // Arrange
+        when(mainframeClient.inquire(any()))
+                .thenReturn(new BalanceInquiryResponse("00", "10004567", AVAILABLE, LEDGER, "USD"));
+        when(mainframeClient.backendName()).thenReturn("STUB_CICS_BALINQ");
+        when(auditEventProducer.send(any()))
+                .thenReturn(CompletableFuture.failedFuture(new RuntimeException("broker timeout")));
 
         // Act
         BalanceResponse response = balanceService.getBalance("10004567", "alice");

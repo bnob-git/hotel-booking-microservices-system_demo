@@ -62,6 +62,13 @@ public class BalanceService {
             );
         }
 
+        if (!BalanceInquiryResponse.RC_OK.equals(copybook.returnCode())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "MF_ERROR: Mainframe returned code " + copybook.returnCode()
+            );
+        }
+
         BalanceResponse response = balanceMapper.toResponse(copybook, mainframeClient.backendName());
 
         publishAudit(response, actor);
@@ -91,7 +98,11 @@ public class BalanceService {
         );
 
         try {
-            auditEventProducer.send(auditEvent);
+            auditEventProducer.send(auditEvent).whenComplete((result, ex) -> {
+                if (ex != null) {
+                    log.error("Failed to deliver audit event for account {}", response.accountId(), ex);
+                }
+            });
         } catch (Exception e) {
             log.error("Failed to send audit event for account {}", response.accountId(), e);
         }
