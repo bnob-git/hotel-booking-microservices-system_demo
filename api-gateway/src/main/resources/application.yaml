@@ -30,6 +30,11 @@ spring:
               predicates:
                 - Path=/api/chat/**
 
+            - id: account-service
+              uri: ${ACCOUNT_SERVICE_URL:http://localhost:8086}
+              predicates:
+                - Path=/api/accounts/**
+
 jwt:
   secret: ${JWT_SECRET}
   expirationMinutes: ${JWT_EXPIRATION_MINUTES:60}
