@@ -23,11 +23,11 @@ public class JwtService {
 
     public Claims extractClaims(String token) {
 
-        return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     public boolean isValid(String token) {

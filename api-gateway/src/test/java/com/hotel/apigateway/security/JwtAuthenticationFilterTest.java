@@ -155,15 +155,15 @@ class JwtAuthenticationFilterTest {
             String role
     ) {
         return Jwts.builder()
-                .setSubject(username)
+                .subject(username)
                 .claim("role", role)
-                .setIssuedAt(new Date())
-                .setExpiration(
+                .issuedAt(new Date())
+                .expiration(
                         new Date(
                                 System.currentTimeMillis() + 60_000
                         )
                 )
-                .signWith(signingKey)
+                .signWith(signingKey, Jwts.SIG.HS256)
                 .compact();
     }
 }

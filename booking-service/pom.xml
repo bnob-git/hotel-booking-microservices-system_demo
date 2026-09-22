@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.12</version>
+        <version>3.5.14</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.hotel</groupId>
@@ -28,6 +28,8 @@
     </scm>
     <properties>
         <java.version>21</java.version>
+        <spring-cloud.version>2025.0.2</spring-cloud.version>
+        <jjwt.version>0.12.6</jjwt.version>
     </properties>
 
     <dependencyManagement>
@@ -35,7 +37,7 @@
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>
-                <version>2023.0.4</version>
+                <version>${spring-cloud.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -80,20 +82,20 @@
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
-            <version>0.11.5</version>
+            <version>${jjwt.version}</version>
         </dependency>
 
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-impl</artifactId>
-            <version>0.11.5</version>
+            <version>${jjwt.version}</version>
             <scope>runtime</scope>
         </dependency>
 
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-jackson</artifactId>
-            <version>0.11.5</version>
+            <version>${jjwt.version}</version>
             <scope>runtime</scope>
         </dependency>
 
