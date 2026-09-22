@@ -91,20 +91,20 @@ class JwtServiceTest {
     ) {
 
         var builder = Jwts.builder()
-                .setSubject(username)
+                .subject(username)
                 .claim("role", role)
-                .setIssuedAt(new Date());
+                .issuedAt(new Date());
 
         if (expiration != null) {
-            builder.setExpiration(expiration);
+            builder.expiration(expiration);
         } else {
-            builder.setExpiration(
+            builder.expiration(
                     new Date(System.currentTimeMillis() + 60_000)
             );
         }
 
         return builder
-                .signWith(signingKey)
+                .signWith(signingKey, Jwts.SIG.HS256)
                 .compact();
     }
 }
