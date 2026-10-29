@@ -1,0 +1,16 @@
+Hello [(${guestName})],
+
+Your booking [(${confirmationCode})] has been [(${action})].
+
+Confirmation code: [(${confirmationCode})]
+Room:              [(${roomName})]
+Check-in:          [(${checkIn})]
+Check-out:         [(${checkOut})]
+Guests:            [(${numGuests})]
+Total price:       [(${totalPrice})]
+[# th:if="${status}"]Status:            [(${status})]
+[/]
+View or manage your booking: [(${lookupUrl})]
+
+Thank you for staying with us,
+The Hotel team
