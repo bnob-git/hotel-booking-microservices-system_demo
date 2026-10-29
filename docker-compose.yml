@@ -148,7 +148,7 @@ services:
       MAIL_HOST: ${MAIL_HOST:-mailpit}
       MAIL_PORT: ${MAIL_PORT:-1025}
       MAIL_FROM: ${MAIL_FROM:-Hotel Reservations <no-reply@hotel.local>}
-      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:4200}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:3000}
     depends_on:
       - postgres
       - kafka
