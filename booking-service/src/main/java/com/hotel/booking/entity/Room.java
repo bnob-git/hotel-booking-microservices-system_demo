@@ -18,6 +18,9 @@ public class Room {
     private BigDecimal price;
     private boolean available;
 
+    // Capacity for the availability search guests filter; null means no limit
+    private Integer maxGuests;
+
     public Room() {}
     public Room(String name, String type, BigDecimal price, boolean available) {
         this.name = name;
@@ -59,5 +62,12 @@ public class Room {
     }
     public void setAvailable(boolean available) {
         this.available = available;
+    }
+
+    public Integer getMaxGuests() {
+        return maxGuests;
+    }
+    public void setMaxGuests(Integer maxGuests) {
+        this.maxGuests = maxGuests;
     }
 }

@@ -2,10 +2,13 @@ package com.hotel.booking.repository;
 
 import com.hotel.booking.entity.Booking;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -65,4 +68,28 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("checkOutDate") LocalDate checkOutDate,
             @Param("bookingId") Long bookingId
     );
+
+    // ================= HOLD EXPIRY =================
+
+    // Loyalty redemptions attached to holds that are about to expire
+    @Query("""
+        SELECT b.loyaltyRedemptionId FROM Booking b
+        WHERE b.status = com.hotel.booking.entity.BookingStatus.PENDING
+        AND b.holdExpiresAt IS NOT NULL
+        AND b.holdExpiresAt <= :now
+        AND b.loyaltyRedemptionId IS NOT NULL
+    """)
+    List<Long> findRedemptionIdsOfLapsedHolds(@Param("now") Instant now);
+
+    // Bulk PENDING -> EXPIRED for holds that lapsed before :now
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+      UPDATE Booking b
+      SET b.status = com.hotel.booking.entity.BookingStatus.EXPIRED,
+          b.updatedAt = :updatedAt
+      WHERE b.status = com.hotel.booking.entity.BookingStatus.PENDING
+        AND b.holdExpiresAt IS NOT NULL
+        AND b.holdExpiresAt <= :now
+    """)
+    int expireHolds(@Param("now") Instant now, @Param("updatedAt") LocalDateTime updatedAt);
 }

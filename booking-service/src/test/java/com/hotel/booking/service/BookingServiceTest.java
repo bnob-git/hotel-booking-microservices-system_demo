@@ -3,10 +3,13 @@ package com.hotel.booking.service;
 import com.hotel.booking.dto.BookingRequest;
 import com.hotel.booking.dto.BookingResponse;
 import com.hotel.booking.entity.Booking;
+import com.hotel.booking.entity.BookingStatus;
 import com.hotel.booking.entity.Room;
 import com.hotel.booking.kafka.AuditEventProducer;
 import com.hotel.booking.mapper.BookingMapper;
 import com.hotel.booking.repository.BookingRepository;
+import com.hotel.booking.repository.PromoCodeRepository;
+import com.hotel.booking.repository.SeasonalRateRepository;
 import com.hotel.booking.security.CustomUserPrincipal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -49,7 +53,20 @@ class BookingServiceTest {
     private ConfirmationCodeGenerator confirmationCodeGenerator;
 
     @Mock
+    private BookingHoldPolicy bookingHoldPolicy;
+
+    @Mock
+    private BookingLifecycleService bookingLifecycleService;
+
+    @Mock
+    private LoyaltyRedemptionService loyaltyRedemptionService;
+
+    @Mock
     private Authentication authentication;
+
+    @Spy
+    private PricingService pricingService =
+            new PricingService(mock(SeasonalRateRepository.class), mock(PromoCodeRepository.class));
 
     @InjectMocks
     private BookingService bookingService;
@@ -73,6 +90,35 @@ class BookingServiceTest {
         );
 
         room.setId(1L);
+    }
+
+    @Test
+    void shouldRedeemLoyaltyPointsWhenRequested() {
+        BookingRequest request = createRequest(LocalDate.now().plusDays(1), LocalDate.now().plusDays(3));
+        request.setRedeemPoints(200L);
+
+        when(authentication.getPrincipal()).thenReturn(user);
+        when(roomService.getRoomById(room.getId())).thenReturn(room);
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        bookingService.createBooking(request, authentication);
+
+        ArgumentCaptor<Booking> captor = ArgumentCaptor.forClass(Booking.class);
+        verify(loyaltyRedemptionService).apply(captor.capture(), eq(user.getId()), eq(200L));
+        assertEquals(BookingStatus.PENDING, captor.getValue().getStatus());
+    }
+
+    @Test
+    void shouldNotCallLoyaltyWithoutPoints() {
+        BookingRequest request = createRequest(LocalDate.now().plusDays(1), LocalDate.now().plusDays(3));
+
+        when(authentication.getPrincipal()).thenReturn(user);
+        when(roomService.getRoomById(room.getId())).thenReturn(room);
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        bookingService.createBooking(request, authentication);
+
+        verifyNoInteractions(loyaltyRedemptionService);
     }
 
     @Test

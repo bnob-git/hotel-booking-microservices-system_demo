@@ -37,6 +37,7 @@ bookingService:
   replicas: 1
   dbUrl: jdbc:postgresql://postgres:5432/booking_db
   userServiceUrl: http://user-service:8081
+  loyaltyServiceUrl: http://loyalty-service:8086
   kafkaBootstrapServers: kafka:9092
   serverPort: 8082
 
@@ -58,6 +59,13 @@ auditService:
   kafkaBootstrapServers: kafka:9092
   serverPort: 8083
 
+loyaltyService:
+  image: loyalty-service:latest
+  replicas: 1
+  dbUrl: jdbc:postgresql://postgres:5432/loyalty_db
+  kafkaBootstrapServers: kafka:9092
+  serverPort: 8086
+
 apiGateway:
   image: api-gateway:latest
   replicas: 1
@@ -65,6 +73,7 @@ apiGateway:
   userServiceUrl: http://user-service:8081
   bookingServiceUrl: http://booking-service:8082
   aiChatServiceUrl: http://ai-chat-service:8084
+  loyaltyServiceUrl: http://loyalty-service:8086
 
 frontend:
   image: frontend:latest

@@ -109,6 +109,16 @@ immediately, Track B on successful payment); cancel → `BOOKING_CANCELLED`; che
 - Frontend: `/search` page (date range, guests, type, price filters, promo code) → each result has a
   **Book** button navigating to `/checkout?roomId=&checkIn=&checkOut=&guests=&promo=`.
 
+- Additive (Track A implementation, optional for consumers):
+  - `AvailableRoom.maxGuests` (nullable integer) — room capacity used by the `guests` filter
+    (column `rooms.max_guests`, V12; `NULL` = no limit).
+  - `GET /api/rooms/availability` also accepts optional `promoCode`, so every result's `quote` already
+    carries the promo outcome (`promoApplied`/`promoMessage`). Results are sorted by `quote.totalPrice` asc.
+  - Invalid/expired/ineligible `promoCode` on `POST /api/bookings` → `400` with the same human message as the quote.
+  - Promo validity (`validFrom`/`validTo`) is checked against today; the optional stay window
+    (`MM-DD` start/end, may wrap the year) must contain every night of the stay. `minSpend` is checked
+    against the seasonal subtotal. Currency is `EUR`.
+
 ## Track B — Payments & Lifecycle (booking-service)
 
 - `POST /api/bookings` creates a `PENDING` hold with `hold_expires_at = now + booking.hold.ttl`
@@ -130,6 +140,19 @@ immediately, Track B on successful payment); cancel → `BOOKING_CANCELLED`; che
 - Frontend: `/checkout` page reads the query params above, collects guests/email/special requests,
   creates the booking, pays with a mock card selector, shows confirmation code + status.
   `/bookings` shows status badges, refund preview and soft-cancel.
+- Track B additions (additive, implemented on `devin/1793276400-track-b-payments-lifecycle`):
+  - `GET /api/bookings/{id}/cancellation-quote` (owner or admin) → `CancellationQuote`:
+    `{ bookingId, status, cancellable, daysBeforeCheckIn, refundPercent, amountPaid, refundAmount,
+    cancellationFee, currency, policy }`.
+  - `BookingResponse` adds `holdExpiresAt, paymentStatus, paymentReference, amountPaid, refundAmount,
+    cancelledAt, cancellationReason, checkedInAt, completedAt`.
+  - Unpaid/expired hold `pay` → 409; declined card → 402 `{ status, message }`, `payment_status=FAILED`.
+  - `/checkout?bookingId=<id>` resumes payment of an existing `PENDING` booking (used by "Pay now" on
+    `/bookings`).
+  - Config: `booking.hold.ttl` (`BOOKING_HOLD_TTL`, `PT15M`), `booking.hold.expiry-interval`
+    (`BOOKING_HOLD_EXPIRY_INTERVAL`, `PT60S`), `booking.scheduling.enabled` (false in tests),
+    `payment.provider` (`PAYMENT_PROVIDER`, `mock` | `stripe`), `payment.stripe.secret-key`
+    (`STRIPE_SECRET_KEY`).
 
 ## Track C — Loyalty (`loyalty-service`, JWT-protected unless noted)
 
@@ -165,6 +188,22 @@ immediately, Track B on successful payment); cancel → `BOOKING_CANCELLED`; che
   - `POST /api/bookings/guest/cancel` `{ code, email }`
   - Migration: `user_id` nullable, new `guest_name` column.
 - Frontend: `/guest/book` and `/guest/lookup` pages (no login required).
+
+## Phase 2 — Integration (booking create flow)
+
+- `POST /api/bookings` accepts optional `promoCode` (Track A pricing) **and** `redeemPoints` (multiple of 100).
+  Order: seasonal pricing → promo discount → loyalty discount (capped at the remaining total) → `totalPrice`.
+  booking-service calls `POST /api/loyalty/internal/redeem` `{ userId, points, bookingReference: confirmationCode }`
+  (Feign, `LOYALTY_SERVICE_URL`). Insufficient balance → 400; loyalty-service down → 503. If the booking transaction
+  rolls back the redemption is reversed.
+- Booking stores `loyaltyPointsRedeemed`, `loyaltyDiscount`, `loyaltyRedemptionId` (Flyway `V40`), exposed on
+  `BookingResponse` as `loyaltyPointsRedeemed` / `loyaltyDiscount`.
+- Redeemed points are returned (`POST /api/loyalty/internal/redemptions/{id}/reverse`) after commit when a booking is
+  cancelled or its hold expires. Earned points follow `BOOKING_CONFIRMED` / `BOOKING_CANCELLED` (Track C).
+- Guest checkout (`POST /api/bookings/guest`) is priced through the same `PricingService` (seasonal + optional
+  `promoCode`) and stays immediately `CONFIRMED` (pay at hotel, no online hold).
+- Frontend `/checkout` shows the server quote, the guest's points balance and a `redeemPoints` input
+  (`data-testid="checkout-redeem-points"`), and the confirmation shows promo and points discounts.
 
 ## Frontend conventions
 

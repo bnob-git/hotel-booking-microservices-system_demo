@@ -3,6 +3,7 @@ package com.hotel.booking.entity;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -25,9 +26,13 @@ public class Booking {
     @Column(nullable = false)
     private Long roomId;
 
-    // Reference to User Service (NOT entity relationship)
-    @Column(nullable = false)
+    // Reference to User Service (NOT entity relationship); null for guest bookings
+    @Column
     private Long userId;
+
+    // Set for guest bookings (no user account)
+    @Column
+    private String guestName;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -48,11 +53,61 @@ public class Booking {
     @Column
     private String contactEmail;
 
+    // Price snapshot taken at create time (Track A)
+    @Column(precision = 12, scale = 2)
+    private BigDecimal baseAmount;
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal seasonalAdjustment;
+
+    @Column(length = 32)
+    private String promoCode;
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal promoDiscount;
+
+    @Column
+    private Long loyaltyPointsRedeemed;
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal loyaltyDiscount;
+
+    @Column
+    private Long loyaltyRedemptionId;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    @Column
+    private Instant holdExpiresAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private PaymentStatus paymentStatus = PaymentStatus.UNPAID;
+
+    @Column(length = 100)
+    private String paymentReference;
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal amountPaid;
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal refundAmount;
+
+    @Column
+    private Instant cancelledAt;
+
+    @Column(length = 500)
+    private String cancellationReason;
+
+    @Column
+    private Instant checkedInAt;
+
+    @Column
+    private Instant completedAt;
 
     public Booking() {}
 
@@ -75,6 +130,9 @@ public class Booking {
         }
         if (numGuests == null) {
             numGuests = 1;
+        }
+        if (paymentStatus == null) {
+            paymentStatus = PaymentStatus.UNPAID;
         }
         if (confirmationCode == null) {
             confirmationCode = "HB" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
@@ -124,6 +182,14 @@ public class Booking {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public String getGuestName() {
+        return guestName;
+    }
+
+    public void setGuestName(String guestName) {
+        this.guestName = guestName;
     }
 
     public BookingStatus getStatus() {
@@ -188,5 +254,133 @@ public class Booking {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public BigDecimal getBaseAmount() {
+        return baseAmount;
+    }
+
+    public void setBaseAmount(BigDecimal baseAmount) {
+        this.baseAmount = baseAmount;
+    }
+
+    public BigDecimal getSeasonalAdjustment() {
+        return seasonalAdjustment;
+    }
+
+    public void setSeasonalAdjustment(BigDecimal seasonalAdjustment) {
+        this.seasonalAdjustment = seasonalAdjustment;
+    }
+
+    public String getPromoCode() {
+        return promoCode;
+    }
+
+    public void setPromoCode(String promoCode) {
+        this.promoCode = promoCode;
+    }
+
+    public BigDecimal getPromoDiscount() {
+        return promoDiscount;
+    }
+
+    public void setPromoDiscount(BigDecimal promoDiscount) {
+        this.promoDiscount = promoDiscount;
+    }
+
+    public Long getLoyaltyPointsRedeemed() {
+        return loyaltyPointsRedeemed;
+    }
+
+    public void setLoyaltyPointsRedeemed(Long loyaltyPointsRedeemed) {
+        this.loyaltyPointsRedeemed = loyaltyPointsRedeemed;
+    }
+
+    public BigDecimal getLoyaltyDiscount() {
+        return loyaltyDiscount;
+    }
+
+    public void setLoyaltyDiscount(BigDecimal loyaltyDiscount) {
+        this.loyaltyDiscount = loyaltyDiscount;
+    }
+
+    public Long getLoyaltyRedemptionId() {
+        return loyaltyRedemptionId;
+    }
+
+    public void setLoyaltyRedemptionId(Long loyaltyRedemptionId) {
+        this.loyaltyRedemptionId = loyaltyRedemptionId;
+    }
+
+    public Instant getHoldExpiresAt() {
+        return holdExpiresAt;
+    }
+
+    public void setHoldExpiresAt(Instant holdExpiresAt) {
+        this.holdExpiresAt = holdExpiresAt;
+    }
+
+    public PaymentStatus getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(PaymentStatus paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public String getPaymentReference() {
+        return paymentReference;
+    }
+
+    public void setPaymentReference(String paymentReference) {
+        this.paymentReference = paymentReference;
+    }
+
+    public BigDecimal getAmountPaid() {
+        return amountPaid;
+    }
+
+    public void setAmountPaid(BigDecimal amountPaid) {
+        this.amountPaid = amountPaid;
+    }
+
+    public BigDecimal getRefundAmount() {
+        return refundAmount;
+    }
+
+    public void setRefundAmount(BigDecimal refundAmount) {
+        this.refundAmount = refundAmount;
+    }
+
+    public Instant getCancelledAt() {
+        return cancelledAt;
+    }
+
+    public void setCancelledAt(Instant cancelledAt) {
+        this.cancelledAt = cancelledAt;
+    }
+
+    public String getCancellationReason() {
+        return cancellationReason;
+    }
+
+    public void setCancellationReason(String cancellationReason) {
+        this.cancellationReason = cancellationReason;
+    }
+
+    public Instant getCheckedInAt() {
+        return checkedInAt;
+    }
+
+    public void setCheckedInAt(Instant checkedInAt) {
+        this.checkedInAt = checkedInAt;
+    }
+
+    public Instant getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(Instant completedAt) {
+        this.completedAt = completedAt;
     }
 }

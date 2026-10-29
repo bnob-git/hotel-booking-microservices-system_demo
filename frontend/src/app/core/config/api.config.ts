@@ -6,4 +6,9 @@ export const API = {
   ROOMS: `${environment.apiBaseUrl}/rooms`,
   BOOKINGS: `${environment.apiBaseUrl}/bookings`,
   CHAT: `${environment.apiBaseUrl}/chat`,
+  AVAILABILITY: `${environment.apiBaseUrl}/rooms/availability`,
+  PRICING: `${environment.apiBaseUrl}/pricing`,
+  LOYALTY: `${environment.apiBaseUrl}/loyalty`,
+  // Track D: public guest checkout (no JWT)
+  GUEST_BOOKINGS: `${environment.apiBaseUrl}/bookings/guest`,
 };

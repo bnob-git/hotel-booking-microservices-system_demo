@@ -20,3 +20,13 @@ spring:
 
 jwt:
   secret: test-only-jwt-secret-key-32-bytes-minimum
+
+booking:
+  scheduling:
+    enabled: false
+
+services:
+  user:
+    url: http://localhost:8081
+  loyalty:
+    url: http://localhost:8086

@@ -18,6 +18,12 @@ export const routes: Routes = [
   },
 
   {
+    path: 'checkout',
+    loadComponent: () => import('./pages/checkout/checkout').then((m) => m.Checkout),
+    canActivate: [bookingGuard],
+  },
+
+  {
     path: 'admin',
     loadComponent: () => import('./pages/admin/admin').then((m) => m.Admin),
     canActivate: [adminGuard],
@@ -28,7 +34,27 @@ export const routes: Routes = [
     component: ChatComponent,
     canActivate: [adminGuard],
   },
+  {
+    path: 'loyalty',
+    loadComponent: () => import('./pages/loyalty/loyalty').then((m) => m.Loyalty),
+    canActivate: [bookingGuard],
+  },
+
   { path: 'login', component: Login },
+  {
+    path: 'search',
+    loadComponent: () => import('./pages/search/search').then((m) => m.Search),
+  },
+
+  // Track D: guest checkout (no login required)
+  {
+    path: 'guest/book',
+    loadComponent: () => import('./pages/guest-booking/guest-booking').then((m) => m.GuestBooking),
+  },
+  {
+    path: 'guest/lookup',
+    loadComponent: () => import('./pages/guest-lookup/guest-lookup').then((m) => m.GuestLookup),
+  },
 
   { path: '**', redirectTo: '' },
 ];

@@ -32,6 +32,16 @@ public class SecurityConfig {
 
                         .pathMatchers("/api/auth/**").permitAll()
                         .pathMatchers("/api/rooms/**").permitAll()
+                        .pathMatchers("/api/pricing/**").permitAll()
+
+                        // Loyalty: tier catalogue is public; internal endpoints are service-to-service only
+                        .pathMatchers(HttpMethod.GET, "/api/loyalty/tiers").permitAll()
+                        .pathMatchers("/api/loyalty/internal/**").denyAll()
+
+                        // Guest checkout (Track D): public, must precede any /api/bookings/** rule
+                        .pathMatchers("/api/bookings/guest/**").permitAll()
+
+                        .pathMatchers("/api/notifications/**").hasRole("ADMIN")
 
                         .pathMatchers("/api/chat/**").hasRole("ADMIN")
 

@@ -9,6 +9,8 @@ data:
 
   USER_SERVICE_URL: {{ .Values.bookingService.userServiceUrl | quote }}
 
+  LOYALTY_SERVICE_URL: {{ .Values.bookingService.loyaltyServiceUrl | quote }}
+
   KAFKA_BOOTSTRAP_SERVERS: {{ .Values.bookingService.kafkaBootstrapServers | quote }}
 
   SERVER_PORT: {{ .Values.bookingService.serverPort | quote }}

@@ -1,10 +1,7 @@
 export type BookingStatus =
-  | 'PENDING'
-  | 'CONFIRMED'
-  | 'CHECKED_IN'
-  | 'COMPLETED'
-  | 'CANCELLED'
-  | 'EXPIRED';
+  'PENDING' | 'CONFIRMED' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED' | 'EXPIRED';
+
+export type PaymentStatus = 'UNPAID' | 'PAID' | 'REFUNDED' | 'PARTIALLY_REFUNDED' | 'FAILED';
 
 export interface BookingResponse {
   id: number;
@@ -24,4 +21,21 @@ export interface BookingResponse {
   specialRequests?: string;
   contactEmail?: string;
   createdAt?: string;
+
+  holdExpiresAt?: string;
+  paymentStatus?: PaymentStatus;
+  paymentReference?: string;
+  amountPaid?: number;
+  refundAmount?: number;
+  cancelledAt?: string;
+  cancellationReason?: string;
+  checkedInAt?: string;
+  completedAt?: string;
+
+  baseAmount?: number;
+  seasonalAdjustment?: number;
+  promoCode?: string;
+  promoDiscount?: number;
+  loyaltyPointsRedeemed?: number;
+  loyaltyDiscount?: number;
 }

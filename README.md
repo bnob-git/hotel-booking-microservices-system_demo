@@ -293,6 +293,43 @@ Each service owns its own database and is responsible for its own data.
 
 ---
 
+## Modern Booking & Loyalty Platform
+
+The booking flow was modernised in phases (contracts: [`docs/modernization/CONTRACTS.md`](docs/modernization/CONTRACTS.md)).
+
+| Capability | Where | Highlights |
+|---|---|---|
+| Booking lifecycle | booking-service | `status`, `totalPrice`, `numGuests`, `confirmationCode`, `specialRequests`; Flyway-managed schema; state machine `PENDING → CONFIRMED → CHECKED_IN → COMPLETED` (+ `CANCELLED`, `EXPIRED`) |
+| Search & pricing | booking-service `/api/rooms/availability`, `/api/pricing/quote` | Availability by date range, seasonal rates (peak ×1.25, summer ×1.15), promo codes (`WELCOME10`, `FLAT25`, `SUMMER15`), price snapshot stored on every booking |
+| Payments | booking-service `/api/bookings/{id}/pay` | 15-minute hold, mock PSP (Stripe adapter optional), hold-expiry job |
+| Cancellation | booking-service `/api/bookings/{id}/cancel` | Soft cancel, refund policy 100% (≥7 days) / 50% (2–6 days) / 0% (<2 days) |
+| Loyalty | loyalty-service (8086) `/api/loyalty/**` | Points on `BOOKING_CONFIRMED` (10 pts/€ × tier multiplier), tiers Bronze→Platinum, redemption (100 pts = €5) at checkout via `redeemPoints`, reversed on cancel / hold expiry |
+| Notifications | notification-service (8087) + Mailpit (UI http://localhost:8025) | Confirmation / cancellation / check-in emails from `booking-events` |
+| Guest checkout | booking-service `/api/bookings/guest`, `/lookup`, `/cancel` | No account needed; lookup by confirmation code + email |
+
+Kafka topics: `audit-events` (unchanged audit flow) and `booking-events` (versioned domain events `BOOKING_CREATED|CONFIRMED|CANCELLED|CHECKED_IN`, consumed by loyalty- and notification-service).
+
+Frontend routes: `/search`, `/checkout`, `/bookings`, `/loyalty`, `/guest/book`, `/guest/lookup`.
+
+### Running the full stack
+
+```bash
+cp .env.example .env            # fill in secrets
+for s in user-service booking-service audit-service api-gateway loyalty-service notification-service; do (cd $s && ./mvnw clean package); done
+docker compose down -v          # required once when upgrading from the Hibernate-created schema to Flyway
+docker compose up -d --build    # frontend http://localhost:3000, Mailpit http://localhost:8025
+```
+
+### End-to-end tests (Playwright)
+
+```bash
+cd frontend
+npm ci && npx playwright install chromium
+npm run e2e                     # runs frontend/e2e against the running compose stack (BASE_URL defaults to http://localhost:3000)
+```
+
+---
+
 ## Continuous Integration
 
 GitHub Actions automatically:
@@ -332,6 +369,10 @@ cd ../booking-service && ./mvnw clean package
 cd ../audit-service && ./mvnw clean package
 
 cd ../api-gateway && ./mvnw clean package
+
+cd ../loyalty-service && ./mvnw clean package
+
+cd ../notification-service && ./mvnw clean package
 
 cd ../ai-chat-service && ./mvnw clean package
 ```

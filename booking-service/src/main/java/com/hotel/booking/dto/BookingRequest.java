@@ -10,6 +10,8 @@ public class BookingRequest {
     private Integer numGuests;
     private String specialRequests;
     private String contactEmail;
+    private String promoCode;
+    private Long redeemPoints;
 
     public BookingRequest() {
     }
@@ -60,5 +62,21 @@ public class BookingRequest {
 
     public void setContactEmail(String contactEmail) {
         this.contactEmail = contactEmail;
+    }
+
+    public Long getRedeemPoints() {
+        return redeemPoints;
+    }
+
+    public void setRedeemPoints(Long redeemPoints) {
+        this.redeemPoints = redeemPoints;
+    }
+
+    public String getPromoCode() {
+        return promoCode;
+    }
+
+    public void setPromoCode(String promoCode) {
+        this.promoCode = promoCode;
     }
 }

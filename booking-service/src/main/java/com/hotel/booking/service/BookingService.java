@@ -5,8 +5,10 @@ import com.hotel.booking.dto.AuditEventType;
 import com.hotel.booking.dto.BookingEventType;
 import com.hotel.booking.dto.BookingRequest;
 import com.hotel.booking.dto.BookingResponse;
+import com.hotel.booking.dto.PriceQuote;
 import com.hotel.booking.entity.Booking;
 import com.hotel.booking.entity.BookingStatus;
+import com.hotel.booking.entity.PaymentStatus;
 import com.hotel.booking.entity.Room;
 import com.hotel.booking.kafka.AuditEventProducer;
 import com.hotel.booking.mapper.BookingMapper;
@@ -14,6 +16,7 @@ import com.hotel.booking.repository.BookingRepository;
 import com.hotel.booking.security.CustomUserPrincipal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -37,6 +40,10 @@ public class BookingService {
     private final AuditEventProducer auditEventProducer;
     private final BookingEventPublisher bookingEventPublisher;
     private final ConfirmationCodeGenerator confirmationCodeGenerator;
+    private final PricingService pricingService;
+    private final BookingHoldPolicy bookingHoldPolicy;
+    private final BookingLifecycleService bookingLifecycleService;
+    private final LoyaltyRedemptionService loyaltyRedemptionService;
     static final int MAX_GUESTS = 10;
     private static final Logger log =
             LoggerFactory.getLogger(BookingService.class);
@@ -47,7 +54,11 @@ public class BookingService {
             RoomService roomService,
             AuditEventProducer auditEventProducer,
             BookingEventPublisher bookingEventPublisher,
-            ConfirmationCodeGenerator confirmationCodeGenerator
+            ConfirmationCodeGenerator confirmationCodeGenerator,
+            PricingService pricingService,
+            BookingHoldPolicy bookingHoldPolicy,
+            @Lazy BookingLifecycleService bookingLifecycleService,
+            LoyaltyRedemptionService loyaltyRedemptionService
     ) {
         this.bookingRepository = bookingRepository;
         this.bookingMapper = bookingMapper;
@@ -55,6 +66,10 @@ public class BookingService {
         this.auditEventProducer = auditEventProducer;
         this.bookingEventPublisher = bookingEventPublisher;
         this.confirmationCodeGenerator = confirmationCodeGenerator;
+        this.pricingService = pricingService;
+        this.bookingHoldPolicy = bookingHoldPolicy;
+        this.bookingLifecycleService = bookingLifecycleService;
+        this.loyaltyRedemptionService = loyaltyRedemptionService;
     }
 
     // ================= READ =================
@@ -129,10 +144,15 @@ public class BookingService {
         booking.setNumGuests(numGuests);
         booking.setSpecialRequests(trimToNull(dto.getSpecialRequests()));
         booking.setContactEmail(trimToNull(dto.getContactEmail()));
-        booking.setTotalPrice(calculateTotalPrice(room, dto.getCheckInDate(), dto.getCheckOutDate()));
+        applyPriceSnapshot(booking, room, dto);
         booking.setConfirmationCode(confirmationCodeGenerator.generate());
-        // No payment step yet: bookings are confirmed immediately (Track B introduces PENDING + payment).
-        booking.setStatus(BookingStatus.CONFIRMED);
+        if (dto.getRedeemPoints() != null && dto.getRedeemPoints() != 0) {
+            loyaltyRedemptionService.apply(booking, user.getId(), dto.getRedeemPoints());
+        }
+        // Unpaid hold; POST /api/bookings/{id}/pay confirms it before hold_expires_at.
+        booking.setStatus(BookingStatus.PENDING);
+        booking.setPaymentStatus(PaymentStatus.UNPAID);
+        booking.setHoldExpiresAt(bookingHoldPolicy.newHoldExpiry());
 
         Booking savedBooking = bookingRepository.save(booking);
 
@@ -161,7 +181,6 @@ public class BookingService {
         }
 
         bookingEventPublisher.publish(BookingEventType.BOOKING_CREATED, savedBooking, user.getUsername(), room.getName());
-        bookingEventPublisher.publish(BookingEventType.BOOKING_CONFIRMED, savedBooking, user.getUsername(), room.getName());
 
         return bookingMapper.toResponse(savedBooking);
     }
@@ -232,52 +251,11 @@ public class BookingService {
     // ================= DELETE =================
 
     /**
-     * Deletes a booking by id.
-     * Publishes BOOKING_CANCELLED (Track B replaces the hard delete with a soft cancel).
+     * Alias for soft cancel: the row is kept with status CANCELLED (see BookingLifecycleService#cancel).
      */
     @PreAuthorize("hasRole('ADMIN') or @bookingService.isOwner(#id, authentication.principal.id)")
-    @Transactional
     public void deleteBooking(Long id, Authentication authentication) {
-
-        Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Booking not found"
-                ));
-
-        Room room = roomService.getRoomById(booking.getRoomId());
-
-        CustomUserPrincipal user =
-                (CustomUserPrincipal) authentication.getPrincipal();
-
-        bookingRepository.delete(booking);
-
-        Map<String, Object> payload = Map.of(
-                "roomName", room.getName(),
-                "checkInDate", booking.getCheckInDate(),
-                "checkOutDate", booking.getCheckOutDate(),
-                "price", room.getPrice()
-        );
-
-        AuditEventRequest auditEvent = new AuditEventRequest(
-                UUID.randomUUID(),
-                AuditEventType.BOOKING_CANCELLED,
-                "booking-service",
-                user.getUsername(),
-                "BOOKING",
-                booking.getId(),
-                payload,
-                "Booking cancelled successfully"
-        );
-
-        try {
-            auditEventProducer.send(auditEvent);
-        } catch (Exception e) {
-            log.error("Failed to send audit event for booking {}", booking.getId(), e);
-        }
-
-        booking.setStatus(BookingStatus.CANCELLED);
-        bookingEventPublisher.publish(BookingEventType.BOOKING_CANCELLED, booking, user.getUsername(), room.getName());
+        bookingLifecycleService.cancel(id, null, authentication);
     }
 
     // ============================================================
@@ -290,7 +268,7 @@ public class BookingService {
     public boolean isOwner(Long bookingId, Long userId) {
 
         return bookingRepository.findById(bookingId)
-                .map(b -> b.getUserId().equals(userId))
+                .map(b -> userId != null && userId.equals(b.getUserId()))
                 .orElse(false);
     }
 
@@ -302,7 +280,27 @@ public class BookingService {
         return room.getPrice().multiply(BigDecimal.valueOf(nights));
     }
 
-    private static int validateNumGuests(Integer numGuests) {
+    /**
+     * Prices the stay with seasonal rates and the optional promo code and stores the snapshot on the booking.
+     * An invalid, expired or ineligible promo code rejects the booking.
+     */
+    private void applyPriceSnapshot(Booking booking, Room room, BookingRequest dto) {
+        if (room.getPrice() == null) {
+            booking.setTotalPrice(null);
+            return;
+        }
+        PriceQuote quote = pricingService.quote(room, dto.getCheckInDate(), dto.getCheckOutDate(), dto.getPromoCode());
+        if (quote.promoCode() != null && !quote.promoApplied()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, quote.promoMessage());
+        }
+        booking.setBaseAmount(quote.baseAmount());
+        booking.setSeasonalAdjustment(quote.seasonalAdjustment());
+        booking.setPromoCode(quote.promoApplied() ? quote.promoCode() : null);
+        booking.setPromoDiscount(quote.promoDiscount());
+        booking.setTotalPrice(quote.totalPrice());
+    }
+
+    static int validateNumGuests(Integer numGuests) {
         if (numGuests == null) {
             return 1;
         }
@@ -325,7 +323,7 @@ public class BookingService {
     /**
      * Validates booking dates (business rules).
      */
-    private void validateBookingDates(LocalDate checkIn, LocalDate checkOut) {
+    static void validateBookingDates(LocalDate checkIn, LocalDate checkOut) {
 
         // Dates must not be null
         if (checkIn == null || checkOut == null) {

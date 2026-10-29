@@ -5,4 +5,6 @@ export interface BookingRequest {
   numGuests?: number;
   specialRequests?: string;
   contactEmail?: string;
+  promoCode?: string;
+  redeemPoints?: number;
 }

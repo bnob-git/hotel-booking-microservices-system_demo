@@ -15,6 +15,11 @@ spring:
               predicates:
                 - Path=/api/auth/**
 
+            - id: notification-service
+              uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8087}
+              predicates:
+                - Path=/api/notifications/**
+
             - id: booking-service
               uri: ${BOOKING_SERVICE_URL:http://localhost:8082}
               predicates:
@@ -24,6 +29,16 @@ spring:
               uri: ${BOOKING_SERVICE_URL:http://localhost:8082}
               predicates:
                 - Path=/api/rooms/**
+
+            - id: pricing-service
+              uri: ${BOOKING_SERVICE_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/pricing/**
+
+            - id: loyalty-service
+              uri: ${LOYALTY_SERVICE_URL:http://localhost:8086}
+              predicates:
+                - Path=/api/loyalty/**
 
             - id: ai-chat-service
               uri: ${AI_CHAT_SERVICE_URL:http://localhost:8084}
