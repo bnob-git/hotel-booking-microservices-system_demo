@@ -18,6 +18,12 @@ export const routes: Routes = [
   },
 
   {
+    path: 'checkout',
+    loadComponent: () => import('./pages/checkout/checkout').then((m) => m.Checkout),
+    canActivate: [bookingGuard],
+  },
+
+  {
     path: 'admin',
     loadComponent: () => import('./pages/admin/admin').then((m) => m.Admin),
     canActivate: [adminGuard],

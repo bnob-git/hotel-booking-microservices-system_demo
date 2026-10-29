@@ -1,0 +1,186 @@
+<section class="checkout" data-testid="checkout-page">
+  <h2>Checkout</h2>
+
+  <ol class="steps" data-testid="checkout-steps">
+    <li [class.active]="step() === 'review'">1. Review stay</li>
+    <li [class.active]="step() === 'details'">2. Guest details</li>
+    <li [class.active]="step() === 'payment'">3. Payment</li>
+    <li [class.active]="step() === 'confirmed'">4. Confirmation</li>
+  </ol>
+
+  <div *ngIf="errorMessage()" class="error" data-testid="checkout-error">{{ errorMessage() }}</div>
+
+  <!-- Stay summary shown on every step -->
+  <mat-card class="summary" data-testid="checkout-summary">
+    <mat-card-title data-testid="checkout-room-name">{{
+      room()?.name ?? 'Room #' + roomId()
+    }}</mat-card-title>
+    <mat-card-content>
+      <p *ngIf="room() as r">Type: {{ r.type }} · {{ r.price | number: '1.2-2' }} € / night</p>
+      <p>
+        <span data-testid="checkout-dates">{{ checkIn() }} → {{ checkOut() }}</span>
+        · <span data-testid="checkout-nights">{{ nights() }}</span> night(s)
+      </p>
+      <p *ngIf="promoCode()" data-testid="checkout-promo">Promo code: {{ promoCode() }}</p>
+      <p class="total">
+        <ng-container *ngIf="booking()?.totalPrice != null; else estimate">
+          Total:
+          <strong data-testid="checkout-total"
+            >{{ booking()!.totalPrice | number: '1.2-2' }} €</strong
+          >
+        </ng-container>
+        <ng-template #estimate>
+          Estimated total:
+          <strong data-testid="checkout-total">{{ estimatedTotal() | number: '1.2-2' }} €</strong>
+        </ng-template>
+      </p>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Step 1: review -->
+  <div *ngIf="step() === 'review'" class="step" data-testid="checkout-step-review">
+    <button
+      mat-raised-button
+      color="primary"
+      data-testid="checkout-continue"
+      (click)="continueToDetails()"
+    >
+      Continue
+    </button>
+  </div>
+
+  <!-- Step 2: guest details -->
+  <div *ngIf="step() === 'details'" class="step form" data-testid="checkout-step-details">
+    <mat-form-field appearance="fill">
+      <mat-label>Guests</mat-label>
+      <input
+        matInput
+        type="number"
+        min="1"
+        max="10"
+        data-testid="checkout-guests"
+        [ngModel]="numGuests()"
+        (ngModelChange)="numGuests.set($event)"
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill">
+      <mat-label>Contact email</mat-label>
+      <input
+        matInput
+        type="email"
+        data-testid="checkout-email"
+        [ngModel]="contactEmail()"
+        (ngModelChange)="contactEmail.set($event)"
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="wide">
+      <mat-label>Special requests</mat-label>
+      <textarea
+        matInput
+        rows="3"
+        data-testid="checkout-special-requests"
+        [ngModel]="specialRequests()"
+        (ngModelChange)="specialRequests.set($event)"
+      ></textarea>
+    </mat-form-field>
+
+    <div class="actions">
+      <button mat-button data-testid="checkout-back" (click)="backToReview()">Back</button>
+      <button
+        mat-raised-button
+        color="primary"
+        data-testid="checkout-place-hold"
+        [disabled]="submitting()"
+        (click)="placeHold()"
+      >
+        Reserve &amp; continue to payment
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 3: payment -->
+  <div
+    *ngIf="step() === 'payment' && booking() as b"
+    class="step"
+    data-testid="checkout-step-payment"
+  >
+    <div class="hold" [class.expired]="holdExpired()" data-testid="checkout-hold">
+      <app-booking-status-badge [value]="b.status" data-testid="checkout-status" />
+      <ng-container *ngIf="!holdExpired(); else expiredHold">
+        Room held for you — complete payment within
+        <strong data-testid="hold-countdown">{{ holdCountdown() }}</strong>
+      </ng-container>
+      <ng-template #expiredHold>
+        <span data-testid="hold-expired">Your hold has expired. Please start a new booking.</span>
+      </ng-template>
+    </div>
+
+    <p class="payment-status" *ngIf="b.paymentStatus">
+      Payment status:
+      <app-booking-status-badge [value]="b.paymentStatus" data-testid="checkout-payment-status" />
+    </p>
+
+    <h3>Select a test card</h3>
+    <mat-radio-group
+      class="cards"
+      data-testid="checkout-card-selector"
+      [ngModel]="paymentMethod()"
+      (ngModelChange)="paymentMethod.set($event)"
+    >
+      <mat-radio-button
+        *ngFor="let card of cards"
+        [value]="card.token"
+        [attr.data-testid]="'card-' + card.token"
+      >
+        <span class="card-label">{{ card.label }}</span>
+        <span class="card-hint">{{ card.hint }}</span>
+      </mat-radio-button>
+    </mat-radio-group>
+
+    <div class="actions">
+      <button mat-button data-testid="checkout-start-over" (click)="startOver()">Start over</button>
+      <button
+        mat-raised-button
+        color="primary"
+        data-testid="checkout-pay"
+        [disabled]="submitting() || holdExpired()"
+        (click)="pay()"
+      >
+        Pay {{ b.totalPrice | number: '1.2-2' }} €
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 4: confirmation -->
+  <div
+    *ngIf="step() === 'confirmed' && booking() as b"
+    class="step confirmation"
+    data-testid="checkout-step-confirmed"
+  >
+    <h3>Booking confirmed</h3>
+    <p>
+      Confirmation code:
+      <strong class="code" data-testid="confirmation-code">{{ b.confirmationCode }}</strong>
+    </p>
+    <p>Status: <app-booking-status-badge [value]="b.status" data-testid="confirmation-status" /></p>
+    <p>
+      Amount paid:
+      <strong data-testid="confirmation-amount-paid"
+        >{{ b.amountPaid ?? 0 | number: '1.2-2' }} €</strong
+      >
+    </p>
+    <p *ngIf="b.paymentReference" class="muted" data-testid="confirmation-payment-reference">
+      Payment reference: {{ b.paymentReference }}
+    </p>
+    <a
+      mat-raised-button
+      color="primary"
+      routerLink="/bookings"
+      data-testid="confirmation-view-bookings"
+    >
+      View my bookings
+    </a>
+  </div>
+</section>

@@ -2,8 +2,10 @@ package com.hotel.booking.dto;
 
 import com.hotel.booking.entity.Booking;
 import com.hotel.booking.entity.BookingStatus;
+import com.hotel.booking.entity.PaymentStatus;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -36,6 +38,17 @@ public class BookingResponse {
     private BigDecimal seasonalAdjustment;
     private String promoCode;
     private BigDecimal promoDiscount;
+
+    // Payment & lifecycle data
+    private Instant holdExpiresAt;
+    private PaymentStatus paymentStatus;
+    private String paymentReference;
+    private BigDecimal amountPaid;
+    private BigDecimal refundAmount;
+    private Instant cancelledAt;
+    private String cancellationReason;
+    private Instant checkedInAt;
+    private Instant completedAt;
 
     public BookingResponse(Long id,
                            Long userId,
@@ -102,6 +115,15 @@ public class BookingResponse {
         response.seasonalAdjustment = booking.getSeasonalAdjustment();
         response.promoCode = booking.getPromoCode();
         response.promoDiscount = booking.getPromoDiscount();
+        response.holdExpiresAt = booking.getHoldExpiresAt();
+        response.paymentStatus = booking.getPaymentStatus();
+        response.paymentReference = booking.getPaymentReference();
+        response.amountPaid = booking.getAmountPaid();
+        response.refundAmount = booking.getRefundAmount();
+        response.cancelledAt = booking.getCancelledAt();
+        response.cancellationReason = booking.getCancellationReason();
+        response.checkedInAt = booking.getCheckedInAt();
+        response.completedAt = booking.getCompletedAt();
         return response;
     }
 
@@ -177,5 +199,41 @@ public class BookingResponse {
 
     public BigDecimal getPromoDiscount() {
         return promoDiscount;
+    }
+
+    public Instant getHoldExpiresAt() {
+        return holdExpiresAt;
+    }
+
+    public PaymentStatus getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public String getPaymentReference() {
+        return paymentReference;
+    }
+
+    public BigDecimal getAmountPaid() {
+        return amountPaid;
+    }
+
+    public BigDecimal getRefundAmount() {
+        return refundAmount;
+    }
+
+    public Instant getCancelledAt() {
+        return cancelledAt;
+    }
+
+    public String getCancellationReason() {
+        return cancellationReason;
+    }
+
+    public Instant getCheckedInAt() {
+        return checkedInAt;
+    }
+
+    public Instant getCompletedAt() {
+        return completedAt;
     }
 }

@@ -140,6 +140,19 @@ immediately, Track B on successful payment); cancel → `BOOKING_CANCELLED`; che
 - Frontend: `/checkout` page reads the query params above, collects guests/email/special requests,
   creates the booking, pays with a mock card selector, shows confirmation code + status.
   `/bookings` shows status badges, refund preview and soft-cancel.
+- Track B additions (additive, implemented on `devin/1793276400-track-b-payments-lifecycle`):
+  - `GET /api/bookings/{id}/cancellation-quote` (owner or admin) → `CancellationQuote`:
+    `{ bookingId, status, cancellable, daysBeforeCheckIn, refundPercent, amountPaid, refundAmount,
+    cancellationFee, currency, policy }`.
+  - `BookingResponse` adds `holdExpiresAt, paymentStatus, paymentReference, amountPaid, refundAmount,
+    cancelledAt, cancellationReason, checkedInAt, completedAt`.
+  - Unpaid/expired hold `pay` → 409; declined card → 402 `{ status, message }`, `payment_status=FAILED`.
+  - `/checkout?bookingId=<id>` resumes payment of an existing `PENDING` booking (used by "Pay now" on
+    `/bookings`).
+  - Config: `booking.hold.ttl` (`BOOKING_HOLD_TTL`, `PT15M`), `booking.hold.expiry-interval`
+    (`BOOKING_HOLD_EXPIRY_INTERVAL`, `PT60S`), `booking.scheduling.enabled` (false in tests),
+    `payment.provider` (`PAYMENT_PROVIDER`, `mock` | `stripe`), `payment.stripe.secret-key`
+    (`STRIPE_SECRET_KEY`).
 
 ## Track C — Loyalty (`loyalty-service`, JWT-protected unless noted)
 

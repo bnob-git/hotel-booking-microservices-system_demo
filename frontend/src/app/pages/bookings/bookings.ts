@@ -1,6 +1,6 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
 import { BookingService } from '../../core/services/booking.service';
@@ -15,6 +15,8 @@ import { UserService } from '../../core/services/user.service';
 import { Room } from '../../core/models/room';
 import { BookingResponse } from '../../core/models/booking-response';
 import { BookingRequest } from '../../core/models/booking-request';
+import { CancellationQuote } from '../../core/models/cancellation-quote';
+import { BookingStatusBadge } from '../../shared/components/booking-status-badge/booking-status-badge';
 
 @Component({
   selector: 'app-bookings',
@@ -26,6 +28,7 @@ import { BookingRequest } from '../../core/models/booking-request';
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
+    BookingStatusBadge,
   ],
   templateUrl: './bookings.html',
   styleUrl: './bookings.scss',
@@ -48,6 +51,13 @@ export class Bookings implements OnInit {
     checkInDate: '',
     checkOutDate: '',
   });
+
+  // Soft-cancel dialog state (refund preview from the cancellation quote)
+  cancelQuote = signal<CancellationQuote | null>(null);
+  cancelReason = signal('');
+  actionInProgress = signal<number | null>(null);
+
+  private router = inject(Router);
 
   constructor(
     private bookingService: BookingService,
@@ -121,6 +131,31 @@ export class Bookings implements OnInit {
     this.updateBooking({ checkOutDate: date });
   }
 
+  // ================= CHECKOUT =================
+
+  goToCheckout(): void {
+    const booking = this.newBooking();
+
+    if (booking.roomId <= 0 || !booking.checkInDate || !booking.checkOutDate) {
+      this.errorMessage.set('Please fill in all fields');
+      this.successMessage.set(null);
+      return;
+    }
+
+    this.errorMessage.set(null);
+    this.router.navigate(['/checkout'], {
+      queryParams: {
+        roomId: booking.roomId,
+        checkIn: booking.checkInDate,
+        checkOut: booking.checkOutDate,
+      },
+    });
+  }
+
+  resumePayment(booking: BookingResponse): void {
+    this.router.navigate(['/checkout'], { queryParams: { bookingId: booking.id } });
+  }
+
   // ================= CREATE =================
 
   createBooking(): void {
@@ -163,6 +198,76 @@ export class Bookings implements OnInit {
         this.bookings.set(this.bookings().filter((b) => b.id !== id));
       },
     });
+  }
+
+  // ================= SOFT CANCEL =================
+
+  canCancel(booking: BookingResponse): boolean {
+    return booking.status === 'PENDING' || booking.status === 'CONFIRMED';
+  }
+
+  openCancel(booking: BookingResponse): void {
+    this.actionInProgress.set(booking.id);
+    this.errorMessage.set(null);
+    this.bookingService.getCancellationQuote(booking.id).subscribe({
+      next: (quote) => {
+        this.actionInProgress.set(null);
+        this.cancelReason.set('');
+        this.cancelQuote.set(quote);
+      },
+      error: (err) => this.actionFailed(err, 'Could not load the cancellation quote'),
+    });
+  }
+
+  closeCancel(): void {
+    this.cancelQuote.set(null);
+  }
+
+  confirmCancel(): void {
+    const quote = this.cancelQuote();
+    if (!quote) {
+      return;
+    }
+    this.actionInProgress.set(quote.bookingId);
+    const reason = this.cancelReason().trim() || undefined;
+    this.bookingService.cancelBooking(quote.bookingId, reason).subscribe({
+      next: (cancelled) => {
+        this.cancelQuote.set(null);
+        this.replaceBooking(cancelled);
+        this.successMessage.set(`Booking #${cancelled.id} cancelled`);
+      },
+      error: (err) => this.actionFailed(err, 'Cancellation failed'),
+    });
+  }
+
+  // ================= ADMIN LIFECYCLE =================
+
+  checkIn(booking: BookingResponse): void {
+    this.actionInProgress.set(booking.id);
+    this.bookingService.checkInBooking(booking.id).subscribe({
+      next: (updated) => this.replaceBooking(updated),
+      error: (err) => this.actionFailed(err, 'Check-in failed'),
+    });
+  }
+
+  complete(booking: BookingResponse): void {
+    this.actionInProgress.set(booking.id);
+    this.bookingService.completeBooking(booking.id).subscribe({
+      next: (updated) => this.replaceBooking(updated),
+      error: (err) => this.actionFailed(err, 'Could not complete booking'),
+    });
+  }
+
+  private replaceBooking(updated: BookingResponse): void {
+    this.actionInProgress.set(null);
+    this.errorMessage.set(null);
+    this.bookings.update((list) => list.map((b) => (b.id === updated.id ? updated : b)));
+  }
+
+  private actionFailed(err: any, fallback: string): void {
+    this.actionInProgress.set(null);
+    this.successMessage.set(null);
+    this.errorMessage.set(err?.error?.message ?? fallback);
   }
 
   trackById(index: number, booking: BookingResponse) {

@@ -1,6 +1,7 @@
 package com.hotel.booking.controller;
 
 import com.hotel.booking.entity.Room;
+import com.hotel.booking.repository.BookingRepository;
 import com.hotel.booking.repository.RoomRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,7 @@ class SearchPricingPublicAccessTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private RoomRepository roomRepository;
+    @Autowired private BookingRepository bookingRepository;
 
     private Long cheapId;
     // Within November no seed season applies, so prices are deterministic
@@ -42,6 +44,9 @@ class SearchPricingPublicAccessTest {
 
     @BeforeEach
     void setUp() {
+        // Other @SpringBootTest classes commit rooms to the shared context; start from an empty catalogue (rolled back after each test).
+        bookingRepository.deleteAll();
+        roomRepository.deleteAll();
         Room cheap = new Room("Access Std", "STANDARD", new BigDecimal("60.00"), true);
         cheap.setMaxGuests(2);
         cheapId = roomRepository.save(cheap).getId();

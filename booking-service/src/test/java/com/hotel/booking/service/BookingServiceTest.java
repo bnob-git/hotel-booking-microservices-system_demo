@@ -52,6 +52,12 @@ class BookingServiceTest {
     private ConfirmationCodeGenerator confirmationCodeGenerator;
 
     @Mock
+    private BookingHoldPolicy bookingHoldPolicy;
+
+    @Mock
+    private BookingLifecycleService bookingLifecycleService;
+
+    @Mock
     private Authentication authentication;
 
     @Spy

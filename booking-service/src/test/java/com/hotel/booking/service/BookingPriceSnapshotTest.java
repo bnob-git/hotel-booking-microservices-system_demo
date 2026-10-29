@@ -66,7 +66,9 @@ class BookingPriceSnapshotTest {
         bookingService = new BookingService(bookingRepository, mock(BookingMapper.class), roomService,
                 mock(AuditEventProducer.class), mock(BookingEventPublisher.class),
                 mock(ConfirmationCodeGenerator.class),
-                new PricingService(seasonalRateRepository, promoCodeRepository));
+                new PricingService(seasonalRateRepository, promoCodeRepository),
+                new BookingHoldPolicy(java.time.Clock.systemUTC(), java.time.Duration.ofMinutes(15)),
+                mock(BookingLifecycleService.class));
 
         authentication = mock(Authentication.class);
         when(authentication.getPrincipal()).thenReturn(new CustomUserPrincipal(
