@@ -1,0 +1,103 @@
+<div class="guest-page">
+  <mat-card class="guest-card">
+    <mat-card-header>
+      <mat-card-title>Find my booking</mat-card-title>
+      <mat-card-subtitle
+        >Enter the confirmation code from your email and the address you booked
+        with.</mat-card-subtitle
+      >
+    </mat-card-header>
+
+    <mat-card-content>
+      <form class="lookup-form" (ngSubmit)="lookup()" data-testid="guest-lookup-form">
+        <mat-form-field appearance="outline">
+          <mat-label>Confirmation code</mat-label>
+          <input
+            matInput
+            name="code"
+            autocomplete="off"
+            [ngModel]="code()"
+            (ngModelChange)="code.set($event)"
+            data-testid="lookup-code"
+          />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Email</mat-label>
+          <input
+            matInput
+            type="email"
+            name="email"
+            autocomplete="email"
+            [ngModel]="email()"
+            (ngModelChange)="email.set($event)"
+            data-testid="lookup-email"
+          />
+        </mat-form-field>
+
+        <button
+          mat-flat-button
+          color="primary"
+          type="submit"
+          [disabled]="loading()"
+          data-testid="lookup-submit"
+        >
+          {{ loading() ? 'Searching…' : 'Find booking' }}
+        </button>
+      </form>
+
+      <p class="error" *ngIf="errorMessage()" data-testid="lookup-error">{{ errorMessage() }}</p>
+      <p class="success" *ngIf="successMessage()" data-testid="lookup-success">
+        {{ successMessage() }}
+      </p>
+
+      <div class="result" *ngIf="booking() as b" data-testid="lookup-result">
+        <div class="result-header">
+          <span class="code" data-testid="lookup-confirmation-code">{{ b.confirmationCode }}</span>
+          <span
+            class="status-badge"
+            [ngClass]="'status-' + (b.status | lowercase)"
+            data-testid="lookup-status"
+          >
+            {{ b.status }}
+          </span>
+        </div>
+        <dl class="details">
+          <dt>Guest</dt>
+          <dd data-testid="lookup-guest-name">{{ b.username }}</dd>
+          <dt>Room</dt>
+          <dd data-testid="lookup-room">{{ b.roomName }}</dd>
+          <dt>Check-in</dt>
+          <dd data-testid="lookup-check-in">{{ b.checkInDate }}</dd>
+          <dt>Check-out</dt>
+          <dd data-testid="lookup-check-out">{{ b.checkOutDate }}</dd>
+          <dt>Guests</dt>
+          <dd data-testid="lookup-num-guests">{{ b.numGuests }}</dd>
+          <dt>Total</dt>
+          <dd data-testid="lookup-total">{{ b.totalPrice | currency: 'EUR' }}</dd>
+          <ng-container *ngIf="b.specialRequests">
+            <dt>Special requests</dt>
+            <dd>{{ b.specialRequests }}</dd>
+          </ng-container>
+        </dl>
+
+        <button
+          *ngIf="canCancel()"
+          mat-stroked-button
+          color="warn"
+          type="button"
+          [disabled]="cancelling()"
+          (click)="cancel()"
+          data-testid="lookup-cancel"
+        >
+          {{ cancelling() ? 'Cancelling…' : 'Cancel booking' }}
+        </button>
+      </div>
+
+      <p class="hint">
+        Don't have a booking yet?
+        <a routerLink="/guest/book" data-testid="lookup-book-link">Book as guest</a>
+      </p>
+    </mat-card-content>
+  </mat-card>
+</div>

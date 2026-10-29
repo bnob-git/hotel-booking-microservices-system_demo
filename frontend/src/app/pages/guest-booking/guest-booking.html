@@ -1,0 +1,184 @@
+<div class="guest-page">
+  <mat-card class="guest-card" *ngIf="!confirmation(); else confirmed">
+    <mat-card-header>
+      <mat-card-title>Book as guest</mat-card-title>
+      <mat-card-subtitle
+        >No account needed &mdash; we'll email your confirmation.</mat-card-subtitle
+      >
+    </mat-card-header>
+
+    <mat-card-content>
+      <form class="guest-form" (ngSubmit)="submit()" data-testid="guest-booking-form">
+        <mat-form-field appearance="outline">
+          <mat-label>Room</mat-label>
+          <mat-select
+            name="roomId"
+            [ngModel]="form().roomId || null"
+            (ngModelChange)="update('roomId', $event)"
+            data-testid="guest-room-select"
+          >
+            <mat-option
+              *ngFor="let room of rooms()"
+              [value]="room.id"
+              [attr.data-testid]="'guest-room-option-' + room.id"
+            >
+              {{ room.name }} &middot; {{ room.type }} &middot;
+              {{ room.price | currency: 'EUR' }}/night
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <div class="row">
+          <mat-form-field appearance="outline">
+            <mat-label>Check-in</mat-label>
+            <input
+              matInput
+              type="date"
+              name="checkInDate"
+              [ngModel]="form().checkInDate"
+              (ngModelChange)="update('checkInDate', $event)"
+              data-testid="guest-check-in"
+            />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Check-out</mat-label>
+            <input
+              matInput
+              type="date"
+              name="checkOutDate"
+              [ngModel]="form().checkOutDate"
+              (ngModelChange)="update('checkOutDate', $event)"
+              data-testid="guest-check-out"
+            />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="guests">
+            <mat-label>Guests</mat-label>
+            <input
+              matInput
+              type="number"
+              min="1"
+              [max]="maxGuests"
+              name="numGuests"
+              [ngModel]="form().numGuests"
+              (ngModelChange)="update('numGuests', $event)"
+              data-testid="guest-num-guests"
+            />
+          </mat-form-field>
+        </div>
+
+        <div class="row">
+          <mat-form-field appearance="outline">
+            <mat-label>Full name</mat-label>
+            <input
+              matInput
+              name="guestName"
+              autocomplete="name"
+              [ngModel]="form().guestName"
+              (ngModelChange)="update('guestName', $event)"
+              data-testid="guest-name"
+            />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Email</mat-label>
+            <input
+              matInput
+              type="email"
+              name="guestEmail"
+              autocomplete="email"
+              [ngModel]="form().guestEmail"
+              (ngModelChange)="update('guestEmail', $event)"
+              data-testid="guest-email"
+            />
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Special requests (optional)</mat-label>
+          <textarea
+            matInput
+            rows="2"
+            maxlength="1000"
+            name="specialRequests"
+            [ngModel]="form().specialRequests"
+            (ngModelChange)="update('specialRequests', $event)"
+            data-testid="guest-special-requests"
+          ></textarea>
+        </mat-form-field>
+
+        <p class="estimate" *ngIf="selectedRoom() && nights() > 0" data-testid="guest-estimate">
+          {{ nights() }} night(s) &times; {{ selectedRoom()!.price | currency: 'EUR' }} =
+          <strong>{{ estimatedTotal() | currency: 'EUR' }}</strong>
+        </p>
+
+        <p class="error" *ngIf="errorMessage()" data-testid="guest-booking-error">
+          {{ errorMessage() }}
+        </p>
+
+        <button
+          mat-flat-button
+          color="primary"
+          type="submit"
+          [disabled]="submitting()"
+          data-testid="guest-booking-submit"
+        >
+          {{ submitting() ? 'Booking…' : 'Book now' }}
+        </button>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <ng-template #confirmed>
+    <mat-card class="guest-card" data-testid="guest-booking-confirmation">
+      <mat-card-header>
+        <mat-card-title>Booking confirmed</mat-card-title>
+        <mat-card-subtitle
+          >A confirmation email is on its way to
+          {{ confirmation()!.contactEmail }}.</mat-card-subtitle
+        >
+      </mat-card-header>
+      <mat-card-content>
+        <p class="code-label">Your confirmation code</p>
+        <p class="code" data-testid="guest-confirmation-code">
+          {{ confirmation()!.confirmationCode }}
+        </p>
+        <dl class="details">
+          <dt>Room</dt>
+          <dd>{{ confirmation()!.roomName }}</dd>
+          <dt>Dates</dt>
+          <dd>{{ confirmation()!.checkInDate }} &rarr; {{ confirmation()!.checkOutDate }}</dd>
+          <dt>Guests</dt>
+          <dd>{{ confirmation()!.numGuests }}</dd>
+          <dt>Total</dt>
+          <dd>{{ confirmation()!.totalPrice | currency: 'EUR' }}</dd>
+          <dt>Status</dt>
+          <dd>
+            <span
+              class="status-badge"
+              [ngClass]="'status-' + (confirmation()!.status | lowercase)"
+              data-testid="guest-booking-status"
+            >
+              {{ confirmation()!.status }}
+            </span>
+          </dd>
+        </dl>
+      </mat-card-content>
+      <mat-card-actions>
+        <a
+          mat-flat-button
+          color="primary"
+          routerLink="/guest/lookup"
+          [queryParams]="{ code: confirmation()!.confirmationCode }"
+          data-testid="guest-manage-booking"
+        >
+          Manage booking
+        </a>
+        <button mat-button type="button" (click)="bookAnother()" data-testid="guest-book-another">
+          Book another stay
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  </ng-template>
+</div>
