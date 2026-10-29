@@ -3,6 +3,7 @@ package com.hotel.booking.entity;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -54,6 +55,34 @@ public class Booking {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column
+    private Instant holdExpiresAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private PaymentStatus paymentStatus = PaymentStatus.UNPAID;
+
+    @Column(length = 100)
+    private String paymentReference;
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal amountPaid;
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal refundAmount;
+
+    @Column
+    private Instant cancelledAt;
+
+    @Column(length = 500)
+    private String cancellationReason;
+
+    @Column
+    private Instant checkedInAt;
+
+    @Column
+    private Instant completedAt;
+
     public Booking() {}
 
     public Booking(LocalDate checkInDate, LocalDate checkOutDate, Long roomId, Long userId) {
@@ -75,6 +104,9 @@ public class Booking {
         }
         if (numGuests == null) {
             numGuests = 1;
+        }
+        if (paymentStatus == null) {
+            paymentStatus = PaymentStatus.UNPAID;
         }
         if (confirmationCode == null) {
             confirmationCode = "HB" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
@@ -188,5 +220,77 @@ public class Booking {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Instant getHoldExpiresAt() {
+        return holdExpiresAt;
+    }
+
+    public void setHoldExpiresAt(Instant holdExpiresAt) {
+        this.holdExpiresAt = holdExpiresAt;
+    }
+
+    public PaymentStatus getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(PaymentStatus paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public String getPaymentReference() {
+        return paymentReference;
+    }
+
+    public void setPaymentReference(String paymentReference) {
+        this.paymentReference = paymentReference;
+    }
+
+    public BigDecimal getAmountPaid() {
+        return amountPaid;
+    }
+
+    public void setAmountPaid(BigDecimal amountPaid) {
+        this.amountPaid = amountPaid;
+    }
+
+    public BigDecimal getRefundAmount() {
+        return refundAmount;
+    }
+
+    public void setRefundAmount(BigDecimal refundAmount) {
+        this.refundAmount = refundAmount;
+    }
+
+    public Instant getCancelledAt() {
+        return cancelledAt;
+    }
+
+    public void setCancelledAt(Instant cancelledAt) {
+        this.cancelledAt = cancelledAt;
+    }
+
+    public String getCancellationReason() {
+        return cancellationReason;
+    }
+
+    public void setCancellationReason(String cancellationReason) {
+        this.cancellationReason = cancellationReason;
+    }
+
+    public Instant getCheckedInAt() {
+        return checkedInAt;
+    }
+
+    public void setCheckedInAt(Instant checkedInAt) {
+        this.checkedInAt = checkedInAt;
+    }
+
+    public Instant getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(Instant completedAt) {
+        this.completedAt = completedAt;
     }
 }

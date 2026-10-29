@@ -20,6 +20,7 @@
     <input
       matInput
       type="date"
+      data-testid="booking-check-in"
       [ngModel]="newBooking().checkInDate"
       (ngModelChange)="updateCheckInDate($event)"
     />
@@ -30,32 +31,71 @@
     <input
       matInput
       type="date"
+      data-testid="booking-check-out"
       [ngModel]="newBooking().checkOutDate"
       (ngModelChange)="updateCheckOutDate($event)"
     />
   </mat-form-field>
 
-  <div *ngIf="errorMessage()" class="error">
-    {{ errorMessage() }}
-  </div>
-
-  <div *ngIf="successMessage()" class="success">
-    {{ successMessage() }}
-  </div>
-
   <button
     mat-raised-button
     color="primary"
-    (click)="createBooking()"
+    data-testid="booking-continue-checkout"
+    (click)="goToCheckout()"
     [disabled]="room()?.available === false"
   >
-    Create Booking
+    Continue to checkout
   </button>
 </div>
 
 <hr />
 
 <h2>Bookings</h2>
+
+<div *ngIf="errorMessage()" class="error" data-testid="bookings-error">
+  {{ errorMessage() }}
+</div>
+
+<div *ngIf="successMessage()" class="success" data-testid="bookings-success">
+  {{ successMessage() }}
+</div>
+
+<!-- Refund preview before soft cancel -->
+<mat-card *ngIf="cancelQuote() as q" class="cancel-panel" data-testid="cancel-panel">
+  <mat-card-title>Cancel booking #{{ q.bookingId }}?</mat-card-title>
+  <mat-card-content>
+    <p data-testid="cancel-policy">{{ q.policy }}</p>
+    <p>
+      Amount paid: {{ q.amountPaid | number: '1.2-2' }} {{ q.currency }} · Refund:
+      <strong data-testid="cancel-refund-amount"
+        >{{ q.refundAmount | number: '1.2-2' }} {{ q.currency }}</strong
+      >
+      (<span data-testid="cancel-refund-percent">{{ q.refundPercent }}</span
+      >%)
+    </p>
+    <mat-form-field appearance="fill" class="reason">
+      <mat-label>Reason (optional)</mat-label>
+      <input
+        matInput
+        data-testid="cancel-reason"
+        [ngModel]="cancelReason()"
+        (ngModelChange)="cancelReason.set($event)"
+      />
+    </mat-form-field>
+  </mat-card-content>
+  <mat-card-actions>
+    <button mat-button data-testid="cancel-keep" (click)="closeCancel()">Keep booking</button>
+    <button
+      mat-raised-button
+      color="warn"
+      data-testid="cancel-confirm"
+      [disabled]="!q.cancellable || actionInProgress() === q.bookingId"
+      (click)="confirmCancel()"
+    >
+      Confirm cancellation
+    </button>
+  </mat-card-actions>
+</mat-card>
 
 <div *ngIf="loading()" class="loading">Loading bookings...</div>
 
@@ -66,7 +106,11 @@
 <div *ngIf="!loading() && bookings().length === 0" class="no-bookings">No bookings found.</div>
 
 <div class="bookings-grid" *ngIf="bookings().length > 0">
-  <mat-card class="booking-card" *ngFor="let booking of bookings(); trackBy: trackById">
+  <mat-card
+    class="booking-card"
+    *ngFor="let booking of bookings(); trackBy: trackById"
+    [attr.data-testid]="'booking-row-' + booking.id"
+  >
     <mat-card-header>
       <mat-card-title>Booking #{{ booking.id }}</mat-card-title>
       <mat-card-subtitle> User: {{ booking.username }} </mat-card-subtitle>
@@ -76,10 +120,73 @@
       <p>Room: {{ booking.roomName }}</p>
       <p>Check-in: {{ booking.checkInDate }}</p>
       <p>Check-out: {{ booking.checkOutDate }}</p>
+      <p *ngIf="booking.confirmationCode">
+        Code:
+        <span class="code" [attr.data-testid]="'booking-code-' + booking.id">{{
+          booking.confirmationCode
+        }}</span>
+      </p>
+      <p class="badges">
+        <app-booking-status-badge
+          [value]="booking.status"
+          [attr.data-testid]="'booking-status-' + booking.id"
+        />
+        <app-booking-status-badge
+          *ngIf="booking.paymentStatus"
+          [value]="booking.paymentStatus"
+          [attr.data-testid]="'booking-payment-status-' + booking.id"
+        />
+      </p>
+      <p *ngIf="booking.totalPrice != null">Total: {{ booking.totalPrice | number: '1.2-2' }} €</p>
+      <p *ngIf="booking.amountPaid != null">Paid: {{ booking.amountPaid | number: '1.2-2' }} €</p>
+      <p *ngIf="booking.refundAmount != null" [attr.data-testid]="'booking-refund-' + booking.id">
+        Refunded: {{ booking.refundAmount | number: '1.2-2' }} €
+      </p>
+      <p *ngIf="booking.cancellationReason" class="muted">
+        Reason: {{ booking.cancellationReason }}
+      </p>
     </mat-card-content>
 
     <mat-card-actions>
-      <button mat-raised-button color="warn" (click)="deleteBooking(booking.id!)">Cancel</button>
+      <button
+        *ngIf="booking.status === 'PENDING'"
+        mat-raised-button
+        color="primary"
+        [attr.data-testid]="'booking-pay-' + booking.id"
+        (click)="resumePayment(booking)"
+      >
+        Pay now
+      </button>
+      <button
+        *ngIf="canCancel(booking)"
+        mat-raised-button
+        color="warn"
+        [attr.data-testid]="'booking-cancel-' + booking.id"
+        [disabled]="actionInProgress() === booking.id"
+        (click)="openCancel(booking)"
+      >
+        Cancel
+      </button>
+      <ng-container *ngIf="userService.isAdmin()">
+        <button
+          *ngIf="booking.status === 'CONFIRMED'"
+          mat-stroked-button
+          [attr.data-testid]="'booking-check-in-' + booking.id"
+          [disabled]="actionInProgress() === booking.id"
+          (click)="checkIn(booking)"
+        >
+          Check-in
+        </button>
+        <button
+          *ngIf="booking.status === 'CHECKED_IN'"
+          mat-stroked-button
+          [attr.data-testid]="'booking-complete-' + booking.id"
+          [disabled]="actionInProgress() === booking.id"
+          (click)="complete(booking)"
+        >
+          Complete
+        </button>
+      </ng-container>
     </mat-card-actions>
   </mat-card>
 </div>

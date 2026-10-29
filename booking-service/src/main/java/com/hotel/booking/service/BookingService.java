@@ -7,6 +7,7 @@ import com.hotel.booking.dto.BookingRequest;
 import com.hotel.booking.dto.BookingResponse;
 import com.hotel.booking.entity.Booking;
 import com.hotel.booking.entity.BookingStatus;
+import com.hotel.booking.entity.PaymentStatus;
 import com.hotel.booking.entity.Room;
 import com.hotel.booking.kafka.AuditEventProducer;
 import com.hotel.booking.mapper.BookingMapper;
@@ -14,6 +15,7 @@ import com.hotel.booking.repository.BookingRepository;
 import com.hotel.booking.security.CustomUserPrincipal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -37,6 +39,8 @@ public class BookingService {
     private final AuditEventProducer auditEventProducer;
     private final BookingEventPublisher bookingEventPublisher;
     private final ConfirmationCodeGenerator confirmationCodeGenerator;
+    private final BookingHoldPolicy bookingHoldPolicy;
+    private final BookingLifecycleService bookingLifecycleService;
     static final int MAX_GUESTS = 10;
     private static final Logger log =
             LoggerFactory.getLogger(BookingService.class);
@@ -47,7 +51,9 @@ public class BookingService {
             RoomService roomService,
             AuditEventProducer auditEventProducer,
             BookingEventPublisher bookingEventPublisher,
-            ConfirmationCodeGenerator confirmationCodeGenerator
+            ConfirmationCodeGenerator confirmationCodeGenerator,
+            BookingHoldPolicy bookingHoldPolicy,
+            @Lazy BookingLifecycleService bookingLifecycleService
     ) {
         this.bookingRepository = bookingRepository;
         this.bookingMapper = bookingMapper;
@@ -55,6 +61,8 @@ public class BookingService {
         this.auditEventProducer = auditEventProducer;
         this.bookingEventPublisher = bookingEventPublisher;
         this.confirmationCodeGenerator = confirmationCodeGenerator;
+        this.bookingHoldPolicy = bookingHoldPolicy;
+        this.bookingLifecycleService = bookingLifecycleService;
     }
 
     // ================= READ =================
@@ -131,8 +139,10 @@ public class BookingService {
         booking.setContactEmail(trimToNull(dto.getContactEmail()));
         booking.setTotalPrice(calculateTotalPrice(room, dto.getCheckInDate(), dto.getCheckOutDate()));
         booking.setConfirmationCode(confirmationCodeGenerator.generate());
-        // No payment step yet: bookings are confirmed immediately (Track B introduces PENDING + payment).
-        booking.setStatus(BookingStatus.CONFIRMED);
+        // Unpaid hold; POST /api/bookings/{id}/pay confirms it before hold_expires_at.
+        booking.setStatus(BookingStatus.PENDING);
+        booking.setPaymentStatus(PaymentStatus.UNPAID);
+        booking.setHoldExpiresAt(bookingHoldPolicy.newHoldExpiry());
 
         Booking savedBooking = bookingRepository.save(booking);
 
@@ -161,7 +171,6 @@ public class BookingService {
         }
 
         bookingEventPublisher.publish(BookingEventType.BOOKING_CREATED, savedBooking, user.getUsername(), room.getName());
-        bookingEventPublisher.publish(BookingEventType.BOOKING_CONFIRMED, savedBooking, user.getUsername(), room.getName());
 
         return bookingMapper.toResponse(savedBooking);
     }
@@ -232,52 +241,11 @@ public class BookingService {
     // ================= DELETE =================
 
     /**
-     * Deletes a booking by id.
-     * Publishes BOOKING_CANCELLED (Track B replaces the hard delete with a soft cancel).
+     * Alias for soft cancel: the row is kept with status CANCELLED (see BookingLifecycleService#cancel).
      */
     @PreAuthorize("hasRole('ADMIN') or @bookingService.isOwner(#id, authentication.principal.id)")
-    @Transactional
     public void deleteBooking(Long id, Authentication authentication) {
-
-        Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Booking not found"
-                ));
-
-        Room room = roomService.getRoomById(booking.getRoomId());
-
-        CustomUserPrincipal user =
-                (CustomUserPrincipal) authentication.getPrincipal();
-
-        bookingRepository.delete(booking);
-
-        Map<String, Object> payload = Map.of(
-                "roomName", room.getName(),
-                "checkInDate", booking.getCheckInDate(),
-                "checkOutDate", booking.getCheckOutDate(),
-                "price", room.getPrice()
-        );
-
-        AuditEventRequest auditEvent = new AuditEventRequest(
-                UUID.randomUUID(),
-                AuditEventType.BOOKING_CANCELLED,
-                "booking-service",
-                user.getUsername(),
-                "BOOKING",
-                booking.getId(),
-                payload,
-                "Booking cancelled successfully"
-        );
-
-        try {
-            auditEventProducer.send(auditEvent);
-        } catch (Exception e) {
-            log.error("Failed to send audit event for booking {}", booking.getId(), e);
-        }
-
-        booking.setStatus(BookingStatus.CANCELLED);
-        bookingEventPublisher.publish(BookingEventType.BOOKING_CANCELLED, booking, user.getUsername(), room.getName());
+        bookingLifecycleService.cancel(id, null, authentication);
     }
 
     // ============================================================

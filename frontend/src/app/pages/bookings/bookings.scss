@@ -74,3 +74,34 @@
     }
   }
 }
+.success {
+  color: #1b5e20;
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.code {
+  font-family: monospace;
+  letter-spacing: 1px;
+}
+
+.muted {
+  color: #78909c;
+  font-size: 13px;
+}
+
+.cancel-panel {
+  max-width: 520px;
+  margin: 1rem auto;
+  border-left: 4px solid #c62828;
+
+  .reason {
+    width: 100%;
+  }
+}

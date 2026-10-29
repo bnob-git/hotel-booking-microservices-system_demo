@@ -2,8 +2,10 @@ package com.hotel.booking.dto;
 
 import com.hotel.booking.entity.Booking;
 import com.hotel.booking.entity.BookingStatus;
+import com.hotel.booking.entity.PaymentStatus;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -30,6 +32,17 @@ public class BookingResponse {
     private final String specialRequests;
     private final String contactEmail;
     private final LocalDateTime createdAt;
+
+    // Payment & lifecycle data
+    private Instant holdExpiresAt;
+    private PaymentStatus paymentStatus;
+    private String paymentReference;
+    private BigDecimal amountPaid;
+    private BigDecimal refundAmount;
+    private Instant cancelledAt;
+    private String cancellationReason;
+    private Instant checkedInAt;
+    private Instant completedAt;
 
     public BookingResponse(Long id,
                            Long userId,
@@ -76,7 +89,7 @@ public class BookingResponse {
     public static BookingResponse of(Booking booking,
                                      String username,
                                      String roomName) {
-        return new BookingResponse(
+        BookingResponse response = new BookingResponse(
                 booking.getId(),
                 booking.getUserId(),
                 booking.getRoomId(),
@@ -92,6 +105,16 @@ public class BookingResponse {
                 booking.getContactEmail(),
                 booking.getCreatedAt()
         );
+        response.holdExpiresAt = booking.getHoldExpiresAt();
+        response.paymentStatus = booking.getPaymentStatus();
+        response.paymentReference = booking.getPaymentReference();
+        response.amountPaid = booking.getAmountPaid();
+        response.refundAmount = booking.getRefundAmount();
+        response.cancelledAt = booking.getCancelledAt();
+        response.cancellationReason = booking.getCancellationReason();
+        response.checkedInAt = booking.getCheckedInAt();
+        response.completedAt = booking.getCompletedAt();
+        return response;
     }
 
     // Getters only (immutable DTO)
@@ -150,5 +173,41 @@ public class BookingResponse {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public Instant getHoldExpiresAt() {
+        return holdExpiresAt;
+    }
+
+    public PaymentStatus getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public String getPaymentReference() {
+        return paymentReference;
+    }
+
+    public BigDecimal getAmountPaid() {
+        return amountPaid;
+    }
+
+    public BigDecimal getRefundAmount() {
+        return refundAmount;
+    }
+
+    public Instant getCancelledAt() {
+        return cancelledAt;
+    }
+
+    public String getCancellationReason() {
+        return cancellationReason;
+    }
+
+    public Instant getCheckedInAt() {
+        return checkedInAt;
+    }
+
+    public Instant getCompletedAt() {
+        return completedAt;
     }
 }
