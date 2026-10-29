@@ -47,3 +47,11 @@ services:
 booking:
   events:
     topic: ${BOOKING_EVENTS_TOPIC:booking-events}
+  hold:
+    ttl: ${BOOKING_HOLD_TTL:PT15M}
+    expiry-interval: ${BOOKING_HOLD_EXPIRY_INTERVAL:PT60S}
+
+payment:
+  provider: ${PAYMENT_PROVIDER:mock}
+  stripe:
+    secret-key: ${STRIPE_SECRET_KEY:}
