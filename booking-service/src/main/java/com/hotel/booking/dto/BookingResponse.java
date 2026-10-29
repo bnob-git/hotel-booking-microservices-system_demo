@@ -1,8 +1,11 @@
 package com.hotel.booking.dto;
 
 import com.hotel.booking.entity.Booking;
+import com.hotel.booking.entity.BookingStatus;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class BookingResponse {
 
@@ -19,6 +22,15 @@ public class BookingResponse {
     private final LocalDate checkInDate;
     private final LocalDate checkOutDate;
 
+    // Lifecycle data
+    private final BookingStatus status;
+    private final BigDecimal totalPrice;
+    private final Integer numGuests;
+    private final String confirmationCode;
+    private final String specialRequests;
+    private final String contactEmail;
+    private final LocalDateTime createdAt;
+
     public BookingResponse(Long id,
                            Long userId,
                            Long roomId,
@@ -26,6 +38,24 @@ public class BookingResponse {
                            String roomName,
                            LocalDate checkInDate,
                            LocalDate checkOutDate) {
+        this(id, userId, roomId, username, roomName, checkInDate, checkOutDate,
+                null, null, null, null, null, null, null);
+    }
+
+    public BookingResponse(Long id,
+                           Long userId,
+                           Long roomId,
+                           String username,
+                           String roomName,
+                           LocalDate checkInDate,
+                           LocalDate checkOutDate,
+                           BookingStatus status,
+                           BigDecimal totalPrice,
+                           Integer numGuests,
+                           String confirmationCode,
+                           String specialRequests,
+                           String contactEmail,
+                           LocalDateTime createdAt) {
         this.id = id;
         this.userId = userId;
         this.roomId = roomId;
@@ -33,6 +63,13 @@ public class BookingResponse {
         this.roomName = roomName;
         this.checkInDate = checkInDate;
         this.checkOutDate = checkOutDate;
+        this.status = status;
+        this.totalPrice = totalPrice;
+        this.numGuests = numGuests;
+        this.confirmationCode = confirmationCode;
+        this.specialRequests = specialRequests;
+        this.contactEmail = contactEmail;
+        this.createdAt = createdAt;
     }
 
     // Factory method (clean mapping style)
@@ -46,7 +83,14 @@ public class BookingResponse {
                 username,
                 roomName,
                 booking.getCheckInDate(),
-                booking.getCheckOutDate()
+                booking.getCheckOutDate(),
+                booking.getStatus(),
+                booking.getTotalPrice(),
+                booking.getNumGuests(),
+                booking.getConfirmationCode(),
+                booking.getSpecialRequests(),
+                booking.getContactEmail(),
+                booking.getCreatedAt()
         );
     }
 
@@ -78,5 +122,33 @@ public class BookingResponse {
 
     public LocalDate getCheckOutDate() {
         return checkOutDate;
+    }
+
+    public BookingStatus getStatus() {
+        return status;
+    }
+
+    public BigDecimal getTotalPrice() {
+        return totalPrice;
+    }
+
+    public Integer getNumGuests() {
+        return numGuests;
+    }
+
+    public String getConfirmationCode() {
+        return confirmationCode;
+    }
+
+    public String getSpecialRequests() {
+        return specialRequests;
+    }
+
+    public String getContactEmail() {
+        return contactEmail;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 }

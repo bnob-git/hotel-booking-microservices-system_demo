@@ -7,6 +7,9 @@ public class BookingRequest {
     private Long roomId;
     private LocalDate checkInDate;
     private LocalDate checkOutDate;
+    private Integer numGuests;
+    private String specialRequests;
+    private String contactEmail;
 
     public BookingRequest() {
     }
@@ -33,5 +36,29 @@ public class BookingRequest {
 
     public void setCheckOutDate(LocalDate checkOutDate) {
         this.checkOutDate = checkOutDate;
+    }
+
+    public Integer getNumGuests() {
+        return numGuests;
+    }
+
+    public void setNumGuests(Integer numGuests) {
+        this.numGuests = numGuests;
+    }
+
+    public String getSpecialRequests() {
+        return specialRequests;
+    }
+
+    public void setSpecialRequests(String specialRequests) {
+        this.specialRequests = specialRequests;
+    }
+
+    public String getContactEmail() {
+        return contactEmail;
+    }
+
+    public void setContactEmail(String contactEmail) {
+        this.contactEmail = contactEmail;
     }
 }

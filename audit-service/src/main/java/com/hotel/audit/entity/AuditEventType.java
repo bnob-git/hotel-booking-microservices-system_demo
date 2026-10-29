@@ -3,7 +3,9 @@ package com.hotel.audit.entity;
 public enum AuditEventType {
     BOOKING_CREATED,
     BOOKING_UPDATED,
+    BOOKING_CONFIRMED,
     BOOKING_CANCELLED,
+    BOOKING_CHECKED_IN,
     USER_REGISTERED,
     USER_UPDATED,
     USER_DELETED,

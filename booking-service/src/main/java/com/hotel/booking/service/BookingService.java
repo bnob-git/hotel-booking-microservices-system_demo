@@ -2,9 +2,11 @@ package com.hotel.booking.service;
 
 import com.hotel.booking.dto.AuditEventRequest;
 import com.hotel.booking.dto.AuditEventType;
+import com.hotel.booking.dto.BookingEventType;
 import com.hotel.booking.dto.BookingRequest;
 import com.hotel.booking.dto.BookingResponse;
 import com.hotel.booking.entity.Booking;
+import com.hotel.booking.entity.BookingStatus;
 import com.hotel.booking.entity.Room;
 import com.hotel.booking.kafka.AuditEventProducer;
 import com.hotel.booking.mapper.BookingMapper;
@@ -19,7 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.security.core.Authentication;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -31,6 +35,9 @@ public class BookingService {
     private final BookingMapper bookingMapper;
     private final RoomService roomService;
     private final AuditEventProducer auditEventProducer;
+    private final BookingEventPublisher bookingEventPublisher;
+    private final ConfirmationCodeGenerator confirmationCodeGenerator;
+    static final int MAX_GUESTS = 10;
     private static final Logger log =
             LoggerFactory.getLogger(BookingService.class);
 
@@ -38,12 +45,16 @@ public class BookingService {
             BookingRepository bookingRepository,
             BookingMapper bookingMapper,
             RoomService roomService,
-            AuditEventProducer auditEventProducer
+            AuditEventProducer auditEventProducer,
+            BookingEventPublisher bookingEventPublisher,
+            ConfirmationCodeGenerator confirmationCodeGenerator
     ) {
         this.bookingRepository = bookingRepository;
         this.bookingMapper = bookingMapper;
         this.roomService = roomService;
         this.auditEventProducer = auditEventProducer;
+        this.bookingEventPublisher = bookingEventPublisher;
+        this.confirmationCodeGenerator = confirmationCodeGenerator;
     }
 
     // ================= READ =================
@@ -105,21 +116,26 @@ public class BookingService {
         CustomUserPrincipal user =
                 (CustomUserPrincipal) authentication.getPrincipal();
 
-        Long userId = user.getId();
-
         validateBookingDates(dto.getCheckInDate(), dto.getCheckOutDate());
+        int numGuests = validateNumGuests(dto.getNumGuests());
 
         checkOverlap(roomId, dto.getCheckInDate(), dto.getCheckOutDate(), null);
 
         Booking booking = new Booking();
         booking.setRoomId(roomId);
-        booking.setUserId(userId);
+        booking.setUserId(user.getId());
         booking.setCheckInDate(dto.getCheckInDate());
         booking.setCheckOutDate(dto.getCheckOutDate());
+        booking.setNumGuests(numGuests);
+        booking.setSpecialRequests(trimToNull(dto.getSpecialRequests()));
+        booking.setContactEmail(trimToNull(dto.getContactEmail()));
+        booking.setTotalPrice(calculateTotalPrice(room, dto.getCheckInDate(), dto.getCheckOutDate()));
+        booking.setConfirmationCode(confirmationCodeGenerator.generate());
+        // No payment step yet: bookings are confirmed immediately (Track B introduces PENDING + payment).
+        booking.setStatus(BookingStatus.CONFIRMED);
 
         Booking savedBooking = bookingRepository.save(booking);
 
-        // Send audit event
         Map<String, Object> payload = Map.of(
                 "roomName", room.getName(),
                 "checkInDate", dto.getCheckInDate(),
@@ -143,6 +159,9 @@ public class BookingService {
         } catch (Exception e) {
             log.error("Failed to send audit event for booking {}", savedBooking.getId(), e);
         }
+
+        bookingEventPublisher.publish(BookingEventType.BOOKING_CREATED, savedBooking, user.getUsername(), room.getName());
+        bookingEventPublisher.publish(BookingEventType.BOOKING_CONFIRMED, savedBooking, user.getUsername(), room.getName());
 
         return bookingMapper.toResponse(savedBooking);
     }
@@ -172,6 +191,10 @@ public class BookingService {
         booking.setRoomId(roomId);
         booking.setCheckInDate(dto.getCheckInDate());
         booking.setCheckOutDate(dto.getCheckOutDate());
+        if (dto.getNumGuests() != null) {
+            booking.setNumGuests(validateNumGuests(dto.getNumGuests()));
+        }
+        booking.setTotalPrice(calculateTotalPrice(room, dto.getCheckInDate(), dto.getCheckOutDate()));
 
         Booking updatedBooking = bookingRepository.save(booking);
 
@@ -210,7 +233,7 @@ public class BookingService {
 
     /**
      * Deletes a booking by id.
-     * If booking does not exist, operation is silently ignored.
+     * Publishes BOOKING_CANCELLED (Track B replaces the hard delete with a soft cancel).
      */
     @PreAuthorize("hasRole('ADMIN') or @bookingService.isOwner(#id, authentication.principal.id)")
     @Transactional
@@ -227,14 +250,14 @@ public class BookingService {
         CustomUserPrincipal user =
                 (CustomUserPrincipal) authentication.getPrincipal();
 
+        bookingRepository.delete(booking);
+
         Map<String, Object> payload = Map.of(
                 "roomName", room.getName(),
                 "checkInDate", booking.getCheckInDate(),
                 "checkOutDate", booking.getCheckOutDate(),
                 "price", room.getPrice()
         );
-
-        bookingRepository.delete(booking);
 
         AuditEventRequest auditEvent = new AuditEventRequest(
                 UUID.randomUUID(),
@@ -252,6 +275,9 @@ public class BookingService {
         } catch (Exception e) {
             log.error("Failed to send audit event for booking {}", booking.getId(), e);
         }
+
+        booking.setStatus(BookingStatus.CANCELLED);
+        bookingEventPublisher.publish(BookingEventType.BOOKING_CANCELLED, booking, user.getUsername(), room.getName());
     }
 
     // ============================================================
@@ -266,6 +292,34 @@ public class BookingService {
         return bookingRepository.findById(bookingId)
                 .map(b -> b.getUserId().equals(userId))
                 .orElse(false);
+    }
+
+    static BigDecimal calculateTotalPrice(Room room, LocalDate checkIn, LocalDate checkOut) {
+        if (room.getPrice() == null) {
+            return null;
+        }
+        long nights = ChronoUnit.DAYS.between(checkIn, checkOut);
+        return room.getPrice().multiply(BigDecimal.valueOf(nights));
+    }
+
+    private static int validateNumGuests(Integer numGuests) {
+        if (numGuests == null) {
+            return 1;
+        }
+        if (numGuests < 1 || numGuests > MAX_GUESTS) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Number of guests must be between 1 and " + MAX_GUESTS
+            );
+        }
+        return numGuests;
+    }
+
+    private static String trimToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 
     /**

@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
@@ -25,13 +26,19 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     // Method for existence checks
     boolean existsByRoomId(Long roomId);
 
+    boolean existsByConfirmationCode(String confirmationCode);
+
+    Optional<Booking> findByConfirmationCode(String confirmationCode);
+
     // ================= CHECK OVERLAPS =================
 
-    // Checking for any existing booking overlaps (for CREATE)
+    // Checking for any existing booking overlaps (for CREATE); cancelled/expired bookings free the room
     @Query("""
       SELECT COUNT(b) > 0
       FROM Booking b
       WHERE b.roomId = :roomId
+        AND b.status NOT IN (com.hotel.booking.entity.BookingStatus.CANCELLED,
+                             com.hotel.booking.entity.BookingStatus.EXPIRED)
         AND b.checkOutDate > :checkInDate
         AND b.checkInDate < :checkOutDate
     """)
@@ -47,6 +54,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
       FROM Booking b
       WHERE b.roomId = :roomId
         AND b.id <> :bookingId
+        AND b.status NOT IN (com.hotel.booking.entity.BookingStatus.CANCELLED,
+                             com.hotel.booking.entity.BookingStatus.EXPIRED)
         AND b.checkOutDate > :checkInDate
         AND b.checkInDate < :checkOutDate
     """)

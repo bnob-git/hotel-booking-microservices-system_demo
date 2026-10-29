@@ -43,6 +43,12 @@ class BookingServiceTest {
     private AuditEventProducer auditEventProducer;
 
     @Mock
+    private BookingEventPublisher bookingEventPublisher;
+
+    @Mock
+    private ConfirmationCodeGenerator confirmationCodeGenerator;
+
+    @Mock
     private Authentication authentication;
 
     @InjectMocks
