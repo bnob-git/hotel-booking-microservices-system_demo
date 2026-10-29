@@ -6,6 +6,8 @@ import { of, throwError } from 'rxjs';
 import { Checkout } from './checkout';
 import { BookingService } from '../../core/services/booking.service';
 import { RoomService } from '../../core/services/room.service';
+import { LoyaltyService } from '../../core/services/loyalty.service';
+import { PricingService } from '../../core/services/pricing.service';
 import { BookingResponse } from '../../core/models/booking-response';
 
 describe('Checkout', () => {
@@ -47,6 +49,14 @@ describe('Checkout', () => {
         provideRouter([]),
         { provide: BookingService, useValue: bookingService },
         { provide: RoomService, useValue: roomService },
+        {
+          provide: LoyaltyService,
+          useValue: {
+            getMyAccount: () =>
+              of({ userId: 7, username: 'alice', pointsBalance: 1200, lifetimePoints: 1200, tier: 'SILVER', nextTier: 'GOLD', pointsToNextTier: 3800, pointValue: 0.05 }),
+          },
+        },
+        { provide: PricingService, useValue: { getQuote: () => throwError(() => new Error('no quote')) } },
         {
           provide: ActivatedRoute,
           useValue: { snapshot: { queryParamMap: convertToParamMap(params) } },
@@ -204,5 +214,29 @@ describe('Checkout', () => {
     component.startOver();
 
     expect(router.navigate).toHaveBeenCalledWith(['/bookings'], { queryParams: { roomId: 3 } });
+  });
+
+  it('sends redeemed loyalty points with the hold and previews the discount', () => {
+    setup({ roomId: '3', checkIn: '2026-12-01', checkOut: '2026-12-04' });
+    bookingService.createBooking.and.returnValue(of(pending));
+    expect(component.pointsBalance()).toBe(1200);
+
+    component.continueToDetails();
+    component.redeemPoints.set(200);
+    expect(component.pointsDiscountPreview()).toBe(10);
+    expect(component.estimatedTotal()).toBe(350);
+    component.placeHold();
+
+    expect(bookingService.createBooking).toHaveBeenCalledWith(jasmine.objectContaining({ redeemPoints: 200 }));
+  });
+
+  it('rejects points that are not a multiple of 100', () => {
+    setup({ roomId: '3', checkIn: '2026-12-01', checkOut: '2026-12-04' });
+    component.continueToDetails();
+    component.redeemPoints.set(150);
+    component.placeHold();
+
+    expect(bookingService.createBooking).not.toHaveBeenCalled();
+    expect(component.errorMessage()).toContain('multiples of 100');
   });
 });

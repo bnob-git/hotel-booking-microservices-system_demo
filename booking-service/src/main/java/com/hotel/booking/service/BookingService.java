@@ -43,6 +43,7 @@ public class BookingService {
     private final PricingService pricingService;
     private final BookingHoldPolicy bookingHoldPolicy;
     private final BookingLifecycleService bookingLifecycleService;
+    private final LoyaltyRedemptionService loyaltyRedemptionService;
     static final int MAX_GUESTS = 10;
     private static final Logger log =
             LoggerFactory.getLogger(BookingService.class);
@@ -56,7 +57,8 @@ public class BookingService {
             ConfirmationCodeGenerator confirmationCodeGenerator,
             PricingService pricingService,
             BookingHoldPolicy bookingHoldPolicy,
-            @Lazy BookingLifecycleService bookingLifecycleService
+            @Lazy BookingLifecycleService bookingLifecycleService,
+            LoyaltyRedemptionService loyaltyRedemptionService
     ) {
         this.bookingRepository = bookingRepository;
         this.bookingMapper = bookingMapper;
@@ -67,6 +69,7 @@ public class BookingService {
         this.pricingService = pricingService;
         this.bookingHoldPolicy = bookingHoldPolicy;
         this.bookingLifecycleService = bookingLifecycleService;
+        this.loyaltyRedemptionService = loyaltyRedemptionService;
     }
 
     // ================= READ =================
@@ -143,6 +146,9 @@ public class BookingService {
         booking.setContactEmail(trimToNull(dto.getContactEmail()));
         applyPriceSnapshot(booking, room, dto);
         booking.setConfirmationCode(confirmationCodeGenerator.generate());
+        if (dto.getRedeemPoints() != null && dto.getRedeemPoints() != 0) {
+            loyaltyRedemptionService.apply(booking, user.getId(), dto.getRedeemPoints());
+        }
         // Unpaid hold; POST /api/bookings/{id}/pay confirms it before hold_expires_at.
         booking.setStatus(BookingStatus.PENDING);
         booking.setPaymentStatus(PaymentStatus.UNPAID);

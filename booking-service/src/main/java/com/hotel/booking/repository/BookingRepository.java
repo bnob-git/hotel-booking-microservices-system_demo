@@ -71,6 +71,16 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     // ================= HOLD EXPIRY =================
 
+    // Loyalty redemptions attached to holds that are about to expire
+    @Query("""
+        SELECT b.loyaltyRedemptionId FROM Booking b
+        WHERE b.status = com.hotel.booking.entity.BookingStatus.PENDING
+        AND b.holdExpiresAt IS NOT NULL
+        AND b.holdExpiresAt <= :now
+        AND b.loyaltyRedemptionId IS NOT NULL
+    """)
+    List<Long> findRedemptionIdsOfLapsedHolds(@Param("now") Instant now);
+
     // Bulk PENDING -> EXPIRED for holds that lapsed before :now
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""

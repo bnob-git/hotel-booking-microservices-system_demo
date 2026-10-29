@@ -3,6 +3,7 @@ package com.hotel.booking.service;
 import com.hotel.booking.dto.BookingRequest;
 import com.hotel.booking.dto.BookingResponse;
 import com.hotel.booking.entity.Booking;
+import com.hotel.booking.entity.BookingStatus;
 import com.hotel.booking.entity.Room;
 import com.hotel.booking.kafka.AuditEventProducer;
 import com.hotel.booking.mapper.BookingMapper;
@@ -58,6 +59,9 @@ class BookingServiceTest {
     private BookingLifecycleService bookingLifecycleService;
 
     @Mock
+    private LoyaltyRedemptionService loyaltyRedemptionService;
+
+    @Mock
     private Authentication authentication;
 
     @Spy
@@ -86,6 +90,35 @@ class BookingServiceTest {
         );
 
         room.setId(1L);
+    }
+
+    @Test
+    void shouldRedeemLoyaltyPointsWhenRequested() {
+        BookingRequest request = createRequest(LocalDate.now().plusDays(1), LocalDate.now().plusDays(3));
+        request.setRedeemPoints(200L);
+
+        when(authentication.getPrincipal()).thenReturn(user);
+        when(roomService.getRoomById(room.getId())).thenReturn(room);
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        bookingService.createBooking(request, authentication);
+
+        ArgumentCaptor<Booking> captor = ArgumentCaptor.forClass(Booking.class);
+        verify(loyaltyRedemptionService).apply(captor.capture(), eq(user.getId()), eq(200L));
+        assertEquals(BookingStatus.PENDING, captor.getValue().getStatus());
+    }
+
+    @Test
+    void shouldNotCallLoyaltyWithoutPoints() {
+        BookingRequest request = createRequest(LocalDate.now().plusDays(1), LocalDate.now().plusDays(3));
+
+        when(authentication.getPrincipal()).thenReturn(user);
+        when(roomService.getRoomById(room.getId())).thenReturn(room);
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        bookingService.createBooking(request, authentication);
+
+        verifyNoInteractions(loyaltyRedemptionService);
     }
 
     @Test

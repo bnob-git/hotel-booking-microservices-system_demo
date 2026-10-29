@@ -12,6 +12,9 @@ import { MatRadioModule } from '@angular/material/radio';
 
 import { BookingService } from '../../core/services/booking.service';
 import { RoomService } from '../../core/services/room.service';
+import { LoyaltyService } from '../../core/services/loyalty.service';
+import { PricingService } from '../../core/services/pricing.service';
+import { PriceQuote } from '../../core/models/pricing';
 import { Room } from '../../core/models/room';
 import { BookingResponse } from '../../core/models/booking-response';
 import { BookingRequest } from '../../core/models/booking-request';
@@ -56,6 +59,8 @@ export class Checkout implements OnInit {
   private router = inject(Router);
   private bookingService = inject(BookingService);
   private roomService = inject(RoomService);
+  private loyaltyService = inject(LoyaltyService);
+  private pricingService = inject(PricingService);
   private destroyRef = inject(DestroyRef);
 
   readonly cards = MOCK_CARDS;
@@ -70,6 +75,10 @@ export class Checkout implements OnInit {
   promoCode = signal<string | null>(null);
 
   numGuests = signal(1);
+  redeemPoints = signal(0);
+  pointsBalance = signal<number | null>(null);
+  pointValue = signal(0.05);
+  pointsDiscountPreview = computed(() => (Number(this.redeemPoints()) || 0) * this.pointValue());
   contactEmail = signal('');
   specialRequests = signal('');
   paymentMethod = signal(MOCK_CARDS[0].token);
@@ -87,7 +96,13 @@ export class Checkout implements OnInit {
     return Math.max(0, Math.round((outDate - inDate) / DAY_MS));
   });
 
-  estimatedTotal = computed(() => (this.room()?.price ?? 0) * this.nights());
+  quote = signal<PriceQuote | null>(null);
+
+  estimatedTotal = computed(() => {
+    const quoted = this.quote()?.totalPrice;
+    const base = quoted ?? (this.room()?.price ?? 0) * this.nights();
+    return Math.max(0, base - this.pointsDiscountPreview());
+  });
 
   stayValid = computed(() => this.roomId() > 0 && this.nights() > 0);
 
@@ -120,6 +135,14 @@ export class Checkout implements OnInit {
       this.numGuests.set(guests);
     }
 
+    this.loyaltyService.getMyAccount().subscribe({
+      next: (account) => {
+        this.pointsBalance.set(account.pointsBalance);
+        this.pointValue.set(account.pointValue ?? 0.05);
+      },
+      error: () => this.pointsBalance.set(null),
+    });
+
     const timer = setInterval(() => this.now.set(Date.now()), 1000);
     this.destroyRef.onDestroy(() => clearInterval(timer));
 
@@ -128,7 +151,25 @@ export class Checkout implements OnInit {
       this.resumeBooking(bookingId);
     } else if (this.roomId()) {
       this.loadRoom(this.roomId());
+      this.loadQuote();
     }
+  }
+
+  private loadQuote(): void {
+    if (!this.stayValid()) {
+      return;
+    }
+    this.pricingService
+      .getQuote({
+        roomId: this.roomId(),
+        checkInDate: this.checkIn(),
+        checkOutDate: this.checkOut(),
+        promoCode: this.promoCode(),
+      })
+      .subscribe({
+        next: (q) => this.quote.set(q),
+        error: () => this.quote.set(null),
+      });
   }
 
   // ================= STEPS =================
@@ -164,6 +205,14 @@ export class Checkout implements OnInit {
     };
     if (this.promoCode()) {
       request.promoCode = this.promoCode()!;
+    }
+    const points = Number(this.redeemPoints()) || 0;
+    if (points > 0) {
+      if (points % 100 !== 0) {
+        this.errorMessage.set('Points must be redeemed in multiples of 100');
+        return;
+      }
+      request.redeemPoints = points;
     }
 
     this.submitting.set(true);

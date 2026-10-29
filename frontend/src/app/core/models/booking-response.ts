@@ -31,4 +31,11 @@ export interface BookingResponse {
   cancellationReason?: string;
   checkedInAt?: string;
   completedAt?: string;
+
+  baseAmount?: number;
+  seasonalAdjustment?: number;
+  promoCode?: string;
+  promoDiscount?: number;
+  loyaltyPointsRedeemed?: number;
+  loyaltyDiscount?: number;
 }

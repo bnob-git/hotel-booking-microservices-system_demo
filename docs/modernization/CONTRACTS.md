@@ -189,6 +189,22 @@ immediately, Track B on successful payment); cancel → `BOOKING_CANCELLED`; che
   - Migration: `user_id` nullable, new `guest_name` column.
 - Frontend: `/guest/book` and `/guest/lookup` pages (no login required).
 
+## Phase 2 — Integration (booking create flow)
+
+- `POST /api/bookings` accepts optional `promoCode` (Track A pricing) **and** `redeemPoints` (multiple of 100).
+  Order: seasonal pricing → promo discount → loyalty discount (capped at the remaining total) → `totalPrice`.
+  booking-service calls `POST /api/loyalty/internal/redeem` `{ userId, points, bookingReference: confirmationCode }`
+  (Feign, `LOYALTY_SERVICE_URL`). Insufficient balance → 400; loyalty-service down → 503. If the booking transaction
+  rolls back the redemption is reversed.
+- Booking stores `loyaltyPointsRedeemed`, `loyaltyDiscount`, `loyaltyRedemptionId` (Flyway `V40`), exposed on
+  `BookingResponse` as `loyaltyPointsRedeemed` / `loyaltyDiscount`.
+- Redeemed points are returned (`POST /api/loyalty/internal/redemptions/{id}/reverse`) after commit when a booking is
+  cancelled or its hold expires. Earned points follow `BOOKING_CONFIRMED` / `BOOKING_CANCELLED` (Track C).
+- Guest checkout (`POST /api/bookings/guest`) is priced through the same `PricingService` (seasonal + optional
+  `promoCode`) and stays immediately `CONFIRMED` (pay at hotel, no online hold).
+- Frontend `/checkout` shows the server quote, the guest's points balance and a `redeemPoints` input
+  (`data-testid="checkout-redeem-points"`), and the confirmation shows promo and points discounts.
+
 ## Frontend conventions
 
 - Routes: `/search` (A), `/checkout` (B), `/loyalty` (C), `/guest/book` + `/guest/lookup` (D).

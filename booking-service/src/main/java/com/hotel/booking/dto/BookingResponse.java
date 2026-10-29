@@ -38,6 +38,8 @@ public class BookingResponse {
     private BigDecimal seasonalAdjustment;
     private String promoCode;
     private BigDecimal promoDiscount;
+    private Long loyaltyPointsRedeemed;
+    private BigDecimal loyaltyDiscount;
 
     // Payment & lifecycle data
     private Instant holdExpiresAt;
@@ -115,6 +117,8 @@ public class BookingResponse {
         response.seasonalAdjustment = booking.getSeasonalAdjustment();
         response.promoCode = booking.getPromoCode();
         response.promoDiscount = booking.getPromoDiscount();
+        response.loyaltyPointsRedeemed = booking.getLoyaltyPointsRedeemed();
+        response.loyaltyDiscount = booking.getLoyaltyDiscount();
         response.holdExpiresAt = booking.getHoldExpiresAt();
         response.paymentStatus = booking.getPaymentStatus();
         response.paymentReference = booking.getPaymentReference();
@@ -199,6 +203,14 @@ public class BookingResponse {
 
     public BigDecimal getPromoDiscount() {
         return promoDiscount;
+    }
+
+    public Long getLoyaltyPointsRedeemed() {
+        return loyaltyPointsRedeemed;
+    }
+
+    public BigDecimal getLoyaltyDiscount() {
+        return loyaltyDiscount;
     }
 
     public Instant getHoldExpiresAt() {

@@ -43,6 +43,8 @@ jwt:
 services:
   user:
     url: ${USER_SERVICE_URL:http://localhost:8081}
+  loyalty:
+    url: ${LOYALTY_SERVICE_URL:http://localhost:8086}
 
 booking:
   events:

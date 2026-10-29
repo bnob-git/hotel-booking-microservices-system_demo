@@ -22,6 +22,15 @@
         · <span data-testid="checkout-nights">{{ nights() }}</span> night(s)
       </p>
       <p *ngIf="promoCode()" data-testid="checkout-promo">Promo code: {{ promoCode() }}</p>
+      <ng-container *ngIf="!booking() && quote() as q">
+        <p class="muted" data-testid="checkout-quote-base">Base: {{ q.baseAmount | number: '1.2-2' }} €</p>
+        <p *ngIf="q.seasonalAdjustment" class="muted" data-testid="checkout-quote-seasonal">
+          Seasonal adjustment: {{ q.seasonalAdjustment | number: '1.2-2' }} €
+        </p>
+        <p *ngIf="q.promoApplied" class="muted" data-testid="checkout-quote-promo">
+          Promo {{ q.promoCode }}: −{{ q.promoDiscount | number: '1.2-2' }} €
+        </p>
+      </ng-container>
       <p class="total">
         <ng-container *ngIf="booking()?.totalPrice != null; else estimate">
           Total:
@@ -74,6 +83,30 @@
         (ngModelChange)="contactEmail.set($event)"
       />
     </mat-form-field>
+
+    <div class="points wide" data-testid="checkout-points">
+      <mat-form-field appearance="fill">
+        <mat-label>Redeem loyalty points</mat-label>
+        <input
+          matInput
+          type="number"
+          min="0"
+          step="100"
+          data-testid="checkout-redeem-points"
+          [ngModel]="redeemPoints()"
+          (ngModelChange)="redeemPoints.set($event)"
+        />
+      </mat-form-field>
+      <p class="muted" data-testid="checkout-points-balance">
+        <ng-container *ngIf="pointsBalance() !== null; else noPoints">
+          Balance: {{ pointsBalance() }} pts · 100 pts = {{ pointValue() * 100 | number: '1.2-2' }} €
+        </ng-container>
+        <ng-template #noPoints>Loyalty balance unavailable</ng-template>
+        <span *ngIf="pointsDiscountPreview() > 0" data-testid="checkout-points-preview">
+          · −{{ pointsDiscountPreview() | number: '1.2-2' }} €
+        </span>
+      </p>
+    </div>
 
     <mat-form-field appearance="fill" class="wide">
       <mat-label>Special requests</mat-label>
@@ -165,6 +198,12 @@
       <strong class="code" data-testid="confirmation-code">{{ b.confirmationCode }}</strong>
     </p>
     <p>Status: <app-booking-status-badge [value]="b.status" data-testid="confirmation-status" /></p>
+    <p *ngIf="b.promoDiscount" data-testid="confirmation-promo-discount">
+      Promo {{ b.promoCode }}: −{{ b.promoDiscount | number: '1.2-2' }} €
+    </p>
+    <p *ngIf="b.loyaltyDiscount" data-testid="confirmation-loyalty-discount">
+      {{ b.loyaltyPointsRedeemed }} points redeemed: −{{ b.loyaltyDiscount | number: '1.2-2' }} €
+    </p>
     <p>
       Amount paid:
       <strong data-testid="confirmation-amount-paid"

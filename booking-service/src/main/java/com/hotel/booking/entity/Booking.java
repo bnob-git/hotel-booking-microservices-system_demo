@@ -66,6 +66,15 @@ public class Booking {
     @Column(precision = 12, scale = 2)
     private BigDecimal promoDiscount;
 
+    @Column
+    private Long loyaltyPointsRedeemed;
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal loyaltyDiscount;
+
+    @Column
+    private Long loyaltyRedemptionId;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -277,6 +286,30 @@ public class Booking {
 
     public void setPromoDiscount(BigDecimal promoDiscount) {
         this.promoDiscount = promoDiscount;
+    }
+
+    public Long getLoyaltyPointsRedeemed() {
+        return loyaltyPointsRedeemed;
+    }
+
+    public void setLoyaltyPointsRedeemed(Long loyaltyPointsRedeemed) {
+        this.loyaltyPointsRedeemed = loyaltyPointsRedeemed;
+    }
+
+    public BigDecimal getLoyaltyDiscount() {
+        return loyaltyDiscount;
+    }
+
+    public void setLoyaltyDiscount(BigDecimal loyaltyDiscount) {
+        this.loyaltyDiscount = loyaltyDiscount;
+    }
+
+    public Long getLoyaltyRedemptionId() {
+        return loyaltyRedemptionId;
+    }
+
+    public void setLoyaltyRedemptionId(Long loyaltyRedemptionId) {
+        this.loyaltyRedemptionId = loyaltyRedemptionId;
     }
 
     public Instant getHoldExpiresAt() {

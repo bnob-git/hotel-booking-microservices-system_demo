@@ -56,6 +56,7 @@ public class BookingLifecycleService {
     private final CancellationPolicy cancellationPolicy;
     private final PaymentGateway paymentGateway;
     private final Clock clock;
+    private final LoyaltyRedemptionService loyaltyRedemptionService;
 
     public BookingLifecycleService(
             BookingRepository bookingRepository,
@@ -67,7 +68,8 @@ public class BookingLifecycleService {
             BookingHoldPolicy holdPolicy,
             CancellationPolicy cancellationPolicy,
             PaymentGateway paymentGateway,
-            Clock clock
+            Clock clock,
+            LoyaltyRedemptionService loyaltyRedemptionService
     ) {
         this.bookingRepository = bookingRepository;
         this.bookingMapper = bookingMapper;
@@ -79,6 +81,7 @@ public class BookingLifecycleService {
         this.cancellationPolicy = cancellationPolicy;
         this.paymentGateway = paymentGateway;
         this.clock = clock;
+        this.loyaltyRedemptionService = loyaltyRedemptionService;
     }
 
     // ================= PAY =================
@@ -159,6 +162,7 @@ public class BookingLifecycleService {
         booking.setCancellationReason(normalizeReason(reason));
         booking.setRefundAmount(refund);
         Booking saved = bookingRepository.save(booking);
+        loyaltyRedemptionService.reverseAfterCommit(saved);
 
         Room room = roomService.getRoomById(saved.getRoomId());
         String actor = username(authentication);
@@ -213,6 +217,7 @@ public class BookingLifecycleService {
     public int expireLapsedHolds() {
         stateMachine.assertTransition(BookingStatus.PENDING, BookingStatus.EXPIRED);
         Instant now = clock.instant();
+        loyaltyRedemptionService.reverseAfterCommit(bookingRepository.findRedemptionIdsOfLapsedHolds(now));
         return bookingRepository.expireHolds(now, LocalDateTime.now(clock));
     }
 

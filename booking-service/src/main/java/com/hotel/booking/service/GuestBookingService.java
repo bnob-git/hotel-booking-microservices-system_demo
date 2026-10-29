@@ -6,6 +6,7 @@ import com.hotel.booking.dto.BookingEventType;
 import com.hotel.booking.dto.BookingResponse;
 import com.hotel.booking.dto.GuestBookingRequest;
 import com.hotel.booking.dto.GuestCancelRequest;
+import com.hotel.booking.dto.PriceQuote;
 import com.hotel.booking.entity.Booking;
 import com.hotel.booking.entity.BookingStatus;
 import com.hotel.booking.entity.Room;
@@ -48,6 +49,7 @@ public class GuestBookingService {
     private final AuditEventProducer auditEventProducer;
     private final BookingEventPublisher bookingEventPublisher;
     private final ConfirmationCodeGenerator confirmationCodeGenerator;
+    private final PricingService pricingService;
 
     public GuestBookingService(
             BookingRepository bookingRepository,
@@ -55,7 +57,8 @@ public class GuestBookingService {
             RoomService roomService,
             AuditEventProducer auditEventProducer,
             BookingEventPublisher bookingEventPublisher,
-            ConfirmationCodeGenerator confirmationCodeGenerator
+            ConfirmationCodeGenerator confirmationCodeGenerator,
+            PricingService pricingService
     ) {
         this.bookingRepository = bookingRepository;
         this.bookingMapper = bookingMapper;
@@ -63,6 +66,7 @@ public class GuestBookingService {
         this.auditEventProducer = auditEventProducer;
         this.bookingEventPublisher = bookingEventPublisher;
         this.confirmationCodeGenerator = confirmationCodeGenerator;
+        this.pricingService = pricingService;
     }
 
     // ================= CREATE =================
@@ -98,9 +102,17 @@ public class GuestBookingService {
         booking.setCheckOutDate(dto.getCheckOutDate());
         booking.setNumGuests(numGuests);
         booking.setSpecialRequests(specialRequests);
-        booking.setTotalPrice(BookingService.calculateTotalPrice(room, dto.getCheckInDate(), dto.getCheckOutDate()));
+        PriceQuote quote = pricingService.quote(room, dto.getCheckInDate(), dto.getCheckOutDate(), trimToNull(dto.getPromoCode()));
+        if (quote.promoCode() != null && !quote.promoApplied()) {
+            throw badRequest(quote.promoMessage());
+        }
+        booking.setBaseAmount(quote.baseAmount());
+        booking.setSeasonalAdjustment(quote.seasonalAdjustment());
+        booking.setPromoCode(quote.promoApplied() ? quote.promoCode() : null);
+        booking.setPromoDiscount(quote.promoDiscount());
+        booking.setTotalPrice(quote.totalPrice());
         booking.setConfirmationCode(confirmationCodeGenerator.generate());
-        // Phase 2 aligns guest checkout with the payment flow; until then guests are confirmed immediately.
+        // Guests pay at the hotel, so guest bookings are confirmed immediately (no online payment hold).
         booking.setStatus(BookingStatus.CONFIRMED);
 
         Booking saved = bookingRepository.save(booking);

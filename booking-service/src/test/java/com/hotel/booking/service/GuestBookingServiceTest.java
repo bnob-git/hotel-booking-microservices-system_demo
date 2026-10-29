@@ -17,6 +17,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
+import org.mockito.Spy;
+import com.hotel.booking.repository.PromoCodeRepository;
+import com.hotel.booking.repository.SeasonalRateRepository;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -50,6 +53,10 @@ class GuestBookingServiceTest {
 
     @Mock
     private ConfirmationCodeGenerator confirmationCodeGenerator;
+
+    @Spy
+    private PricingService pricingService =
+            new PricingService(mock(SeasonalRateRepository.class), mock(PromoCodeRepository.class));
 
     @InjectMocks
     private GuestBookingService guestBookingService;

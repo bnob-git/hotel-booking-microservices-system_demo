@@ -28,7 +28,8 @@ class HoldExpiryJobTest {
         BookingLifecycleService lifecycleService = new BookingLifecycleService(
                 repository, mock(BookingMapper.class), mock(RoomService.class), mock(AuditEventProducer.class),
                 publisher, stateMachine, new BookingHoldPolicy(clock, Duration.ofMinutes(15)),
-                new CancellationPolicy(clock, stateMachine), mock(PaymentGateway.class), clock);
+                new CancellationPolicy(clock, stateMachine), mock(PaymentGateway.class), clock,
+                mock(LoyaltyRedemptionService.class));
         when(repository.expireHolds(NOW, LocalDateTime.of(2026, 11, 1, 10, 0))).thenReturn(3);
 
         int expired = new HoldExpiryJob(lifecycleService).expireHolds();

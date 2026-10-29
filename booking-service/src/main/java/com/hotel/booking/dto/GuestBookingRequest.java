@@ -11,6 +11,7 @@ public class GuestBookingRequest {
     private String guestName;
     private String guestEmail;
     private String specialRequests;
+    private String promoCode;
 
     public GuestBookingRequest() {
     }
@@ -61,6 +62,14 @@ public class GuestBookingRequest {
 
     public void setGuestEmail(String guestEmail) {
         this.guestEmail = guestEmail;
+    }
+
+    public String getPromoCode() {
+        return promoCode;
+    }
+
+    public void setPromoCode(String promoCode) {
+        this.promoCode = promoCode;
     }
 
     public String getSpecialRequests() {

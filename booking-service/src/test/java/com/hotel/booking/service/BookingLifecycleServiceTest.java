@@ -46,6 +46,7 @@ class BookingLifecycleServiceTest {
     private AuditEventProducer auditEventProducer;
     private BookingEventPublisher publisher;
     private PaymentGateway paymentGateway;
+    private LoyaltyRedemptionService loyaltyRedemptionService;
     private BookingLifecycleService service;
     private Authentication auth;
 
@@ -57,11 +58,13 @@ class BookingLifecycleServiceTest {
         auditEventProducer = mock(AuditEventProducer.class);
         publisher = mock(BookingEventPublisher.class);
         paymentGateway = spy(new MockPaymentGateway());
+        loyaltyRedemptionService = mock(LoyaltyRedemptionService.class);
         RoomService roomService = mock(RoomService.class);
         BookingStateMachine stateMachine = new BookingStateMachine();
         service = new BookingLifecycleService(repository, mapper, roomService, auditEventProducer, publisher,
                 stateMachine, new BookingHoldPolicy(clock, Duration.ofMinutes(15)),
-                new CancellationPolicy(clock, stateMachine), paymentGateway, clock);
+                new CancellationPolicy(clock, stateMachine), paymentGateway, clock,
+                loyaltyRedemptionService);
 
         Room room = new Room("Room 201", "DOUBLE", new BigDecimal("120.00"), true);
         room.setId(3L);
@@ -312,5 +315,27 @@ class BookingLifecycleServiceTest {
         doThrow(new RuntimeException("kafka down")).when(auditEventProducer).send(any());
         service.pay(7L, "tok_visa", auth);
         assertEquals(BookingStatus.CONFIRMED, b.getStatus());
+    }
+
+    // ---------- loyalty points (Phase 2) ----------
+
+    @Test
+    void cancellingReturnsRedeemedPoints() {
+        Booking b = booking(BookingStatus.CONFIRMED, 7);
+        b.setLoyaltyRedemptionId(55L);
+
+        service.cancel(7L, null, auth);
+
+        verify(loyaltyRedemptionService).reverseAfterCommit(b);
+    }
+
+    @Test
+    void expiringHoldsReturnsRedeemedPoints() {
+        when(repository.findRedemptionIdsOfLapsedHolds(NOW)).thenReturn(List.of(55L, 56L));
+        when(repository.expireHolds(eq(NOW), any())).thenReturn(2);
+
+        assertEquals(2, service.expireLapsedHolds());
+
+        verify(loyaltyRedemptionService).reverseAfterCommit(List.of(55L, 56L));
     }
 }
