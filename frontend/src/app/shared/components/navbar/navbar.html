@@ -27,6 +27,26 @@
     AI Chat
   </a>
 
+  <!-- Guest checkout (Track D): only when logged out -->
+  <a
+    *ngIf="!userService.isLoggedIn()"
+    mat-button
+    routerLink="/guest/book"
+    routerLinkActive="active"
+    data-testid="nav-guest-book"
+  >
+    Book as guest
+  </a>
+  <a
+    *ngIf="!userService.isLoggedIn()"
+    mat-button
+    routerLink="/guest/lookup"
+    routerLinkActive="active"
+    data-testid="nav-guest-lookup"
+  >
+    Find my booking
+  </a>
+
   <!-- Show login only if NOT logged in -->
   <a *ngIf="!userService.isLoggedIn()" mat-button routerLink="/login" routerLinkActive="active">
     Login

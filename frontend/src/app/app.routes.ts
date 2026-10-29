@@ -30,5 +30,15 @@ export const routes: Routes = [
   },
   { path: 'login', component: Login },
 
+  // Track D: guest checkout (no login required)
+  {
+    path: 'guest/book',
+    loadComponent: () => import('./pages/guest-booking/guest-booking').then((m) => m.GuestBooking),
+  },
+  {
+    path: 'guest/lookup',
+    loadComponent: () => import('./pages/guest-lookup/guest-lookup').then((m) => m.GuestLookup),
+  },
+
   { path: '**', redirectTo: '' },
 ];

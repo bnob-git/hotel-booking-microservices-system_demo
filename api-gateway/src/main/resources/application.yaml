@@ -15,6 +15,11 @@ spring:
               predicates:
                 - Path=/api/auth/**
 
+            - id: notification-service
+              uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8087}
+              predicates:
+                - Path=/api/notifications/**
+
             - id: booking-service
               uri: ${BOOKING_SERVICE_URL:http://localhost:8082}
               predicates:

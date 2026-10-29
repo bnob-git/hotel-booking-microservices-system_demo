@@ -25,9 +25,13 @@ public class Booking {
     @Column(nullable = false)
     private Long roomId;
 
-    // Reference to User Service (NOT entity relationship)
-    @Column(nullable = false)
+    // Reference to User Service (NOT entity relationship); null for guest bookings
+    @Column
     private Long userId;
+
+    // Set for guest bookings (no user account)
+    @Column
+    private String guestName;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -124,6 +128,14 @@ public class Booking {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public String getGuestName() {
+        return guestName;
+    }
+
+    public void setGuestName(String guestName) {
+        this.guestName = guestName;
     }
 
     public BookingStatus getStatus() {
