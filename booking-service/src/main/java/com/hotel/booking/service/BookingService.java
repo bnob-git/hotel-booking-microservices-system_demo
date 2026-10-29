@@ -290,7 +290,7 @@ public class BookingService {
     public boolean isOwner(Long bookingId, Long userId) {
 
         return bookingRepository.findById(bookingId)
-                .map(b -> b.getUserId().equals(userId))
+                .map(b -> userId != null && userId.equals(b.getUserId()))
                 .orElse(false);
     }
 
@@ -302,7 +302,7 @@ public class BookingService {
         return room.getPrice().multiply(BigDecimal.valueOf(nights));
     }
 
-    private static int validateNumGuests(Integer numGuests) {
+    static int validateNumGuests(Integer numGuests) {
         if (numGuests == null) {
             return 1;
         }
@@ -325,7 +325,7 @@ public class BookingService {
     /**
      * Validates booking dates (business rules).
      */
-    private void validateBookingDates(LocalDate checkIn, LocalDate checkOut) {
+    static void validateBookingDates(LocalDate checkIn, LocalDate checkOut) {
 
         // Dates must not be null
         if (checkIn == null || checkOut == null) {
