@@ -17,6 +17,7 @@ fi
 minikube image build -t user-service:latest ./user-service
 minikube image build -t booking-service:latest ./booking-service
 minikube image build -t audit-service:latest ./audit-service
+minikube image build -t loyalty-service:latest ./loyalty-service
 minikube image build -t api-gateway:latest ./api-gateway
 minikube image build -t ai-chat-service:latest ./ai-chat-service
 minikube image build -t frontend:latest ./frontend

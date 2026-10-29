@@ -1,0 +1,162 @@
+<h2>My Loyalty</h2>
+
+<div *ngIf="loading()" class="loading" data-testid="loyalty-loading">
+  Loading loyalty account...
+</div>
+
+<div *ngIf="loadError()" class="error" data-testid="loyalty-error">{{ loadError() }}</div>
+
+<ng-container *ngIf="!loading() && account() as acc">
+  <div class="summary">
+    <mat-card class="balance-card">
+      <mat-card-content>
+        <div class="label">Points balance</div>
+        <div class="balance" data-testid="loyalty-balance">{{ acc.pointsBalance | number }}</div>
+        <div class="sub" data-testid="loyalty-lifetime">
+          Lifetime points: {{ acc.lifetimePoints | number }}
+        </div>
+        <div class="sub" data-testid="loyalty-balance-value">
+          Worth {{ acc.pointsBalance * acc.pointValue | currency: 'EUR' }}
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="tier-card">
+      <mat-card-content>
+        <div class="label">Current tier</div>
+        <span
+          class="tier-badge"
+          [ngClass]="'tier-' + acc.tier.toLowerCase()"
+          data-testid="loyalty-tier-badge"
+          >{{ tierLabel(acc.tier) }}</span
+        >
+
+        <mat-progress-bar
+          mode="determinate"
+          [value]="progress()"
+          data-testid="loyalty-tier-progress"
+        ></mat-progress-bar>
+
+        <div class="sub" *ngIf="acc.nextTier; else topTier" data-testid="loyalty-next-tier">
+          {{ acc.pointsToNextTier | number }} points to {{ tierLabel(acc.nextTier) }}
+        </div>
+        <ng-template #topTier>
+          <div class="sub" data-testid="loyalty-next-tier">You have reached the top tier</div>
+        </ng-template>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="redeem-card">
+      <mat-card-content>
+        <div class="label">Redeem points (preview)</div>
+        <mat-form-field appearance="fill">
+          <mat-label>Points</mat-label>
+          <input
+            matInput
+            type="number"
+            min="0"
+            [step]="redemptionIncrement"
+            [ngModel]="redeemPoints()"
+            (ngModelChange)="updateRedeemPoints($event)"
+            data-testid="loyalty-redeem-points"
+          />
+          <mat-hint
+            >Multiples of {{ redemptionIncrement }}, up to {{ maxRedeemable() | number }}</mat-hint
+          >
+        </mat-form-field>
+
+        <div *ngIf="redeemError()" class="error" data-testid="loyalty-redeem-error">
+          {{ redeemError() }}
+        </div>
+        <div class="redeem-value" data-testid="loyalty-redeem-value">
+          = {{ redeemValue() | currency: 'EUR' }} off a future booking
+        </div>
+        <div class="sub">Apply your discount when booking a room.</div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <h3>Tiers &amp; perks</h3>
+  <table class="loyalty-table" data-testid="loyalty-tiers-table">
+    <thead>
+      <tr>
+        <th>Tier</th>
+        <th>Lifetime points</th>
+        <th>Earn rate</th>
+        <th>Perks</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr
+        *ngFor="let t of tiers()"
+        [class.current]="isCurrentTier(t)"
+        [attr.data-testid]="'loyalty-tier-row-' + t.tier"
+      >
+        <td>
+          <span class="tier-badge" [ngClass]="'tier-' + t.tier.toLowerCase()">{{
+            tierLabel(t.tier)
+          }}</span>
+          <span *ngIf="isCurrentTier(t)" class="you">(you)</span>
+        </td>
+        <td>{{ t.minLifetimePoints | number }}+</td>
+        <td>×{{ t.earnMultiplier }}</td>
+        <td>
+          <ul>
+            <li *ngFor="let perk of t.perks">{{ perk }}</li>
+          </ul>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Points history</h3>
+  <div
+    *ngIf="transactions().length === 0"
+    class="no-transactions"
+    data-testid="loyalty-no-transactions"
+  >
+    No points activity yet. Confirmed bookings earn 10 points per €1.
+  </div>
+
+  <table
+    *ngIf="transactions().length > 0"
+    class="loyalty-table"
+    data-testid="loyalty-transactions-table"
+  >
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Type</th>
+        <th>Booking</th>
+        <th>Description</th>
+        <th class="num">Points</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr
+        *ngFor="let tx of transactions(); trackBy: trackById"
+        data-testid="loyalty-transaction-row"
+      >
+        <td>{{ tx.createdAt | date: 'medium' }}</td>
+        <td>
+          <span
+            class="tx-type"
+            [ngClass]="'tx-' + tx.type.toLowerCase()"
+            data-testid="loyalty-transaction-type"
+            >{{ tx.type }}</span
+          >
+        </td>
+        <td data-testid="loyalty-transaction-confirmation">{{ tx.confirmationCode || '—' }}</td>
+        <td>{{ tx.description }}</td>
+        <td
+          class="num"
+          [class.positive]="tx.points > 0"
+          [class.negative]="tx.points < 0"
+          data-testid="loyalty-transaction-points"
+        >
+          {{ tx.points > 0 ? '+' : '' }}{{ tx.points | number }}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</ng-container>

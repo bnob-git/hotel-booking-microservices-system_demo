@@ -7,3 +7,4 @@ data:
   USER_SERVICE_URL: http://user-service:8081
   BOOKING_SERVICE_URL: http://booking-service:8082
   AI_CHAT_SERVICE_URL: http://ai-chat-service:8084
+  LOYALTY_SERVICE_URL: http://loyalty-service:8086

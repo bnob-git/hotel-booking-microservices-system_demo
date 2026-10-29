@@ -8,4 +8,5 @@ export const API = {
   CHAT: `${environment.apiBaseUrl}/chat`,
   AVAILABILITY: `${environment.apiBaseUrl}/rooms/availability`,
   PRICING: `${environment.apiBaseUrl}/pricing`,
+  LOYALTY: `${environment.apiBaseUrl}/loyalty`,
 };

@@ -91,6 +91,7 @@ kubectl apply -f k8s/kafka-ui/
 kubectl apply -f k8s/user-service/
 kubectl apply -f k8s/booking-service/
 kubectl apply -f k8s/audit-service/
+kubectl apply -f k8s/loyalty-service/
 
 echo "Applying Gemini AI Chat Service..."
 
