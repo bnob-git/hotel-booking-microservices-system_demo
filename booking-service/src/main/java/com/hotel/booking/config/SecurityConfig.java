@@ -39,6 +39,9 @@ public class SecurityConfig {
                         // Rooms: everyone can view rooms
                         .requestMatchers(HttpMethod.GET, "/api/rooms/**").permitAll()
 
+                        // Pricing quotes: public (availability search is covered by GET /api/rooms/**)
+                        .requestMatchers("/api/pricing/**").permitAll()
+
                         // internal microservice communication
                         .requestMatchers("/api/bookings/internal/**").permitAll()
 

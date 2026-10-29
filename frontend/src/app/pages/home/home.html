@@ -27,6 +27,10 @@
             <button mat-raised-button color="primary" [disabled]="!room.available" (click)="goToBooking(room.id)">
                 Book
             </button>
+            <button mat-stroked-button color="primary" [attr.data-testid]="'home-search-dates-' + room.id"
+                (click)="searchDates(room)">
+                Search dates
+            </button>
         </mat-card-actions>
     </mat-card>
 </div>

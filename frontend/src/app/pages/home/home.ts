@@ -39,6 +39,12 @@ export class Home implements OnInit {
     return room.id;
   }
 
+  searchDates(room: Room) {
+    this.router.navigate(['/search'], {
+      queryParams: { type: room.type },
+    });
+  }
+
   goToBooking(roomId: number) {
     this.router.navigate(['/bookings'], {
       queryParams: { roomId },

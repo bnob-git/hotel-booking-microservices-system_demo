@@ -1,0 +1,113 @@
+.search-form {
+  padding: 1rem;
+  margin-bottom: 1rem;
+
+  .fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  mat-form-field {
+    width: 180px;
+  }
+
+  mat-form-field.narrow {
+    width: 130px;
+  }
+}
+
+.error {
+  color: #c62828;
+  font-weight: 500;
+}
+
+.promo-message {
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+
+  &.applied {
+    background: #e8f5e9;
+    color: #2e7d32;
+  }
+
+  &.rejected {
+    background: #fff3e0;
+    color: #e65100;
+  }
+}
+
+.results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0.5rem 0;
+}
+
+.results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1rem;
+}
+
+.result {
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.nightly {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+
+  td {
+    padding: 2px 4px;
+  }
+
+  .amount {
+    text-align: right;
+  }
+}
+
+.season-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #eceff1;
+  color: #455a64;
+
+  &.season-peak {
+    background: #fce4ec;
+    color: #ad1457;
+  }
+
+  &.season-summer {
+    background: #fff8e1;
+    color: #ef6c00;
+  }
+}
+
+.breakdown {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  row-gap: 2px;
+  margin: 0.5rem 0 0;
+
+  dt,
+  dd {
+    margin: 0;
+  }
+
+  dd {
+    text-align: right;
+  }
+
+  .total {
+    font-weight: 700;
+    border-top: 1px solid #ccc;
+    padding-top: 4px;
+  }
+}

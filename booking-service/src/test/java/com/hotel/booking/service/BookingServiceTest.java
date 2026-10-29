@@ -7,6 +7,8 @@ import com.hotel.booking.entity.Room;
 import com.hotel.booking.kafka.AuditEventProducer;
 import com.hotel.booking.mapper.BookingMapper;
 import com.hotel.booking.repository.BookingRepository;
+import com.hotel.booking.repository.PromoCodeRepository;
+import com.hotel.booking.repository.SeasonalRateRepository;
 import com.hotel.booking.security.CustomUserPrincipal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -50,6 +53,10 @@ class BookingServiceTest {
 
     @Mock
     private Authentication authentication;
+
+    @Spy
+    private PricingService pricingService =
+            new PricingService(mock(SeasonalRateRepository.class), mock(PromoCodeRepository.class));
 
     @InjectMocks
     private BookingService bookingService;
