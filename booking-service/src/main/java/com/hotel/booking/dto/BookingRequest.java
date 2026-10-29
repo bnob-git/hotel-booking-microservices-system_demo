@@ -10,6 +10,7 @@ public class BookingRequest {
     private Integer numGuests;
     private String specialRequests;
     private String contactEmail;
+    private String promoCode;
 
     public BookingRequest() {
     }
@@ -60,5 +61,13 @@ public class BookingRequest {
 
     public void setContactEmail(String contactEmail) {
         this.contactEmail = contactEmail;
+    }
+
+    public String getPromoCode() {
+        return promoCode;
+    }
+
+    public void setPromoCode(String promoCode) {
+        this.promoCode = promoCode;
     }
 }

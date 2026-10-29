@@ -48,6 +48,19 @@ public class Booking {
     @Column
     private String contactEmail;
 
+    // Price snapshot taken at create time (Track A)
+    @Column(precision = 12, scale = 2)
+    private BigDecimal baseAmount;
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal seasonalAdjustment;
+
+    @Column(length = 32)
+    private String promoCode;
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal promoDiscount;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -188,5 +201,37 @@ public class Booking {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public BigDecimal getBaseAmount() {
+        return baseAmount;
+    }
+
+    public void setBaseAmount(BigDecimal baseAmount) {
+        this.baseAmount = baseAmount;
+    }
+
+    public BigDecimal getSeasonalAdjustment() {
+        return seasonalAdjustment;
+    }
+
+    public void setSeasonalAdjustment(BigDecimal seasonalAdjustment) {
+        this.seasonalAdjustment = seasonalAdjustment;
+    }
+
+    public String getPromoCode() {
+        return promoCode;
+    }
+
+    public void setPromoCode(String promoCode) {
+        this.promoCode = promoCode;
+    }
+
+    public BigDecimal getPromoDiscount() {
+        return promoDiscount;
+    }
+
+    public void setPromoDiscount(BigDecimal promoDiscount) {
+        this.promoDiscount = promoDiscount;
     }
 }

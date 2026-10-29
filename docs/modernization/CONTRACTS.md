@@ -109,6 +109,16 @@ immediately, Track B on successful payment); cancel → `BOOKING_CANCELLED`; che
 - Frontend: `/search` page (date range, guests, type, price filters, promo code) → each result has a
   **Book** button navigating to `/checkout?roomId=&checkIn=&checkOut=&guests=&promo=`.
 
+- Additive (Track A implementation, optional for consumers):
+  - `AvailableRoom.maxGuests` (nullable integer) — room capacity used by the `guests` filter
+    (column `rooms.max_guests`, V12; `NULL` = no limit).
+  - `GET /api/rooms/availability` also accepts optional `promoCode`, so every result's `quote` already
+    carries the promo outcome (`promoApplied`/`promoMessage`). Results are sorted by `quote.totalPrice` asc.
+  - Invalid/expired/ineligible `promoCode` on `POST /api/bookings` → `400` with the same human message as the quote.
+  - Promo validity (`validFrom`/`validTo`) is checked against today; the optional stay window
+    (`MM-DD` start/end, may wrap the year) must contain every night of the stay. `minSpend` is checked
+    against the seasonal subtotal. Currency is `EUR`.
+
 ## Track B — Payments & Lifecycle (booking-service)
 
 - `POST /api/bookings` creates a `PENDING` hold with `hold_expires_at = now + booking.hold.ttl`

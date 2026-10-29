@@ -5,6 +5,7 @@ import com.hotel.booking.dto.AuditEventType;
 import com.hotel.booking.dto.BookingEventType;
 import com.hotel.booking.dto.BookingRequest;
 import com.hotel.booking.dto.BookingResponse;
+import com.hotel.booking.dto.PriceQuote;
 import com.hotel.booking.entity.Booking;
 import com.hotel.booking.entity.BookingStatus;
 import com.hotel.booking.entity.Room;
@@ -37,6 +38,7 @@ public class BookingService {
     private final AuditEventProducer auditEventProducer;
     private final BookingEventPublisher bookingEventPublisher;
     private final ConfirmationCodeGenerator confirmationCodeGenerator;
+    private final PricingService pricingService;
     static final int MAX_GUESTS = 10;
     private static final Logger log =
             LoggerFactory.getLogger(BookingService.class);
@@ -47,7 +49,8 @@ public class BookingService {
             RoomService roomService,
             AuditEventProducer auditEventProducer,
             BookingEventPublisher bookingEventPublisher,
-            ConfirmationCodeGenerator confirmationCodeGenerator
+            ConfirmationCodeGenerator confirmationCodeGenerator,
+            PricingService pricingService
     ) {
         this.bookingRepository = bookingRepository;
         this.bookingMapper = bookingMapper;
@@ -55,6 +58,7 @@ public class BookingService {
         this.auditEventProducer = auditEventProducer;
         this.bookingEventPublisher = bookingEventPublisher;
         this.confirmationCodeGenerator = confirmationCodeGenerator;
+        this.pricingService = pricingService;
     }
 
     // ================= READ =================
@@ -129,7 +133,7 @@ public class BookingService {
         booking.setNumGuests(numGuests);
         booking.setSpecialRequests(trimToNull(dto.getSpecialRequests()));
         booking.setContactEmail(trimToNull(dto.getContactEmail()));
-        booking.setTotalPrice(calculateTotalPrice(room, dto.getCheckInDate(), dto.getCheckOutDate()));
+        applyPriceSnapshot(booking, room, dto);
         booking.setConfirmationCode(confirmationCodeGenerator.generate());
         // No payment step yet: bookings are confirmed immediately (Track B introduces PENDING + payment).
         booking.setStatus(BookingStatus.CONFIRMED);
@@ -302,6 +306,26 @@ public class BookingService {
         return room.getPrice().multiply(BigDecimal.valueOf(nights));
     }
 
+    /**
+     * Prices the stay with seasonal rates and the optional promo code and stores the snapshot on the booking.
+     * An invalid, expired or ineligible promo code rejects the booking.
+     */
+    private void applyPriceSnapshot(Booking booking, Room room, BookingRequest dto) {
+        if (room.getPrice() == null) {
+            booking.setTotalPrice(null);
+            return;
+        }
+        PriceQuote quote = pricingService.quote(room, dto.getCheckInDate(), dto.getCheckOutDate(), dto.getPromoCode());
+        if (quote.promoCode() != null && !quote.promoApplied()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, quote.promoMessage());
+        }
+        booking.setBaseAmount(quote.baseAmount());
+        booking.setSeasonalAdjustment(quote.seasonalAdjustment());
+        booking.setPromoCode(quote.promoApplied() ? quote.promoCode() : null);
+        booking.setPromoDiscount(quote.promoDiscount());
+        booking.setTotalPrice(quote.totalPrice());
+    }
+
     private static int validateNumGuests(Integer numGuests) {
         if (numGuests == null) {
             return 1;
@@ -325,7 +349,7 @@ public class BookingService {
     /**
      * Validates booking dates (business rules).
      */
-    private void validateBookingDates(LocalDate checkIn, LocalDate checkOut) {
+    static void validateBookingDates(LocalDate checkIn, LocalDate checkOut) {
 
         // Dates must not be null
         if (checkIn == null || checkOut == null) {
