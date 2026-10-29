@@ -124,6 +124,37 @@ services:
     networks:
       - hotel-net
 
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+    networks:
+      - hotel-net
+
+  notification-service:
+    build:
+      context: ./notification-service
+    container_name: notification-service
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${NOTIFICATION_DB_NAME:-notification_db}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MAIL_HOST: ${MAIL_HOST:-mailpit}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_FROM: ${MAIL_FROM:-Hotel Reservations <no-reply@hotel.local>}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:4200}
+    depends_on:
+      - postgres
+      - kafka
+      - mailpit
+    networks:
+      - hotel-net
+
   ollama:
     image: ollama/ollama
     container_name: ollama
@@ -207,6 +238,7 @@ services:
       BOOKING_SERVICE_URL: http://booking-service:8082
       AI_CHAT_SERVICE_URL: http://ai-chat-service:8084
       LOYALTY_SERVICE_URL: ${LOYALTY_SERVICE_URL:-http://loyalty-service:8086}
+      NOTIFICATION_SERVICE_URL: http://notification-service:8087
     depends_on:
       - user-service
       - booking-service

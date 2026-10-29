@@ -46,5 +46,15 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/search/search').then((m) => m.Search),
   },
 
+  // Track D: guest checkout (no login required)
+  {
+    path: 'guest/book',
+    loadComponent: () => import('./pages/guest-booking/guest-booking').then((m) => m.GuestBooking),
+  },
+  {
+    path: 'guest/lookup',
+    loadComponent: () => import('./pages/guest-lookup/guest-lookup').then((m) => m.GuestLookup),
+  },
+
   { path: '**', redirectTo: '' },
 ];

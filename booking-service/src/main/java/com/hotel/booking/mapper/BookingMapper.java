@@ -19,9 +19,9 @@ public class BookingMapper {
 
     public BookingResponse toResponse(Booking booking) {
 
-        String username = userLookupService
-                .getUserById(booking.getUserId())
-                .getUsername();
+        String username = booking.getUserId() == null
+                ? booking.getGuestName()
+                : userLookupService.getUserById(booking.getUserId()).getUsername();
 
         String roomName = roomService
                 .getRoomById(booking.getRoomId())

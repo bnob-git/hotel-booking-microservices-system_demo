@@ -38,6 +38,11 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.GET, "/api/loyalty/tiers").permitAll()
                         .pathMatchers("/api/loyalty/internal/**").denyAll()
 
+                        // Guest checkout (Track D): public, must precede any /api/bookings/** rule
+                        .pathMatchers("/api/bookings/guest/**").permitAll()
+
+                        .pathMatchers("/api/notifications/**").hasRole("ADMIN")
+
                         .pathMatchers("/api/chat/**").hasRole("ADMIN")
 
                         .anyExchange().authenticated()

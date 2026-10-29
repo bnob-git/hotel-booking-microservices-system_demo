@@ -1,0 +1,46 @@
+@use '../guest-shared' as *;
+
+.lookup-form {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  margin-top: 16px;
+
+  mat-form-field {
+    flex: 1 1 220px;
+  }
+
+  button {
+    margin-top: 10px;
+  }
+}
+
+.success {
+  color: #2e7d32;
+}
+
+.result {
+  border-top: 1px solid #e0e0e0;
+  margin-top: 8px;
+  padding-top: 16px;
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .code {
+    font-family: monospace;
+    font-size: 22px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    color: #3f51b5;
+  }
+}
+
+.hint {
+  margin-top: 24px;
+  color: #616e7c;
+}

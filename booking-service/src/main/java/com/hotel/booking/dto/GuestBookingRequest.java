@@ -1,0 +1,73 @@
+package com.hotel.booking.dto;
+
+import java.time.LocalDate;
+
+public class GuestBookingRequest {
+
+    private Long roomId;
+    private LocalDate checkInDate;
+    private LocalDate checkOutDate;
+    private Integer numGuests;
+    private String guestName;
+    private String guestEmail;
+    private String specialRequests;
+
+    public GuestBookingRequest() {
+    }
+
+    public Long getRoomId() {
+        return roomId;
+    }
+
+    public void setRoomId(Long roomId) {
+        this.roomId = roomId;
+    }
+
+    public LocalDate getCheckInDate() {
+        return checkInDate;
+    }
+
+    public void setCheckInDate(LocalDate checkInDate) {
+        this.checkInDate = checkInDate;
+    }
+
+    public LocalDate getCheckOutDate() {
+        return checkOutDate;
+    }
+
+    public void setCheckOutDate(LocalDate checkOutDate) {
+        this.checkOutDate = checkOutDate;
+    }
+
+    public Integer getNumGuests() {
+        return numGuests;
+    }
+
+    public void setNumGuests(Integer numGuests) {
+        this.numGuests = numGuests;
+    }
+
+    public String getGuestName() {
+        return guestName;
+    }
+
+    public void setGuestName(String guestName) {
+        this.guestName = guestName;
+    }
+
+    public String getGuestEmail() {
+        return guestEmail;
+    }
+
+    public void setGuestEmail(String guestEmail) {
+        this.guestEmail = guestEmail;
+    }
+
+    public String getSpecialRequests() {
+        return specialRequests;
+    }
+
+    public void setSpecialRequests(String specialRequests) {
+        this.specialRequests = specialRequests;
+    }
+}

@@ -37,6 +37,10 @@ jobs:
         working-directory: loyalty-service
         run: ./mvnw clean package
 
+      - name: Build and test Notification Service
+        working-directory: notification-service
+        run: ./mvnw clean package
+
       - name: Build and test API Gateway
         working-directory: api-gateway
         run: ./mvnw clean package
@@ -54,6 +58,7 @@ jobs:
             booking-service/target/*.jar
             audit-service/target/*.jar
             loyalty-service/target/*.jar
+            notification-service/target/*.jar
             api-gateway/target/*.jar
             ai-chat-service/target/*.jar
 
@@ -129,6 +134,9 @@ jobs:
       - name: Build Loyalty Service image
         run: docker build -t $REGISTRY/$IMAGE_OWNER/hotel-booking-loyalty-service:$IMAGE_TAG ./loyalty-service
 
+      - name: Build Notification Service image
+        run: docker build -t $REGISTRY/$IMAGE_OWNER/hotel-booking-notification-service:$IMAGE_TAG ./notification-service
+
       - name: Build API Gateway image
         run: docker build -t $REGISTRY/$IMAGE_OWNER/hotel-booking-api-gateway:$IMAGE_TAG ./api-gateway
 
@@ -149,6 +157,9 @@ jobs:
 
       - name: Push Loyalty Service image
         run: docker push $REGISTRY/$IMAGE_OWNER/hotel-booking-loyalty-service:$IMAGE_TAG
+
+      - name: Push Notification Service image
+        run: docker push $REGISTRY/$IMAGE_OWNER/hotel-booking-notification-service:$IMAGE_TAG
 
       - name: Push API Gateway image
         run: docker push $REGISTRY/$IMAGE_OWNER/hotel-booking-api-gateway:$IMAGE_TAG

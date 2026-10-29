@@ -45,6 +45,9 @@ public class SecurityConfig {
                         // internal microservice communication
                         .requestMatchers("/api/bookings/internal/**").permitAll()
 
+                        // Guest checkout (Track D): public, no JWT; must precede the /api/bookings/** rule
+                        .requestMatchers("/api/bookings/guest/**").permitAll()
+
                         // Rooms: only ADMIN can modify rooms
                         .requestMatchers(HttpMethod.POST, "/api/rooms/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/rooms/**").hasRole("ADMIN")
