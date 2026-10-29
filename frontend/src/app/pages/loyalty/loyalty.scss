@@ -1,0 +1,119 @@
+.loading,
+.no-transactions,
+.error {
+  font-style: italic;
+  margin-top: 1rem;
+}
+
+.error {
+  color: red;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+
+  mat-form-field {
+    width: 100%;
+  }
+}
+
+.label {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+  margin-bottom: 0.5rem;
+}
+
+.balance {
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: #3f51b5;
+}
+
+.sub {
+  margin-top: 0.5rem;
+  opacity: 0.8;
+}
+
+.redeem-value {
+  font-weight: 600;
+  margin-top: 0.75rem;
+}
+
+.tier-card mat-progress-bar {
+  margin-top: 1rem;
+}
+
+.tier-badge {
+  display: inline-block;
+  padding: 0.2rem 0.75rem;
+  border-radius: 999px;
+  font-weight: 600;
+  color: #fff;
+
+  &.tier-bronze {
+    background: #a0522d;
+  }
+  &.tier-silver {
+    background: #8e8e93;
+  }
+  &.tier-gold {
+    background: #c9a227;
+  }
+  &.tier-platinum {
+    background: #4b5563;
+  }
+}
+
+.you {
+  margin-left: 0.5rem;
+  font-style: italic;
+}
+
+.loyalty-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 2rem;
+
+  th,
+  td {
+    text-align: left;
+    padding: 0.6rem;
+    border-bottom: 1px solid #e0e0e0;
+    vertical-align: top;
+  }
+
+  th {
+    background: #f5f7fa;
+  }
+
+  tr.current {
+    background: #eef1fb;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 1.2rem;
+  }
+
+  .num {
+    text-align: right;
+  }
+
+  .positive {
+    color: #2e7d32;
+  }
+
+  .negative {
+    color: #c62828;
+  }
+}
+
+.tx-type {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
