@@ -37,6 +37,7 @@ bookingService:
   replicas: 1
   dbUrl: jdbc:postgresql://postgres:5432/booking_db
   userServiceUrl: http://user-service:8081
+  loyaltyServiceUrl: http://loyalty-service:8086
   kafkaBootstrapServers: kafka:9092
   serverPort: 8082
 
