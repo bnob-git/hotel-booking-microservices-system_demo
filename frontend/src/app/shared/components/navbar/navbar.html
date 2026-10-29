@@ -19,6 +19,15 @@
     Rooms
   </a>
   <a mat-button routerLink="/bookings" routerLinkActive="active"> Bookings </a>
+  <a
+    *ngIf="userService.isLoggedIn()"
+    mat-button
+    routerLink="/loyalty"
+    routerLinkActive="active"
+    data-testid="nav-loyalty"
+  >
+    Loyalty
+  </a>
   <a *ngIf="userService.isAdmin()" mat-button routerLink="/admin" routerLinkActive="active">
     Admin
   </a>

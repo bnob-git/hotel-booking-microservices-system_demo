@@ -28,6 +28,12 @@ export const routes: Routes = [
     component: ChatComponent,
     canActivate: [adminGuard],
   },
+  {
+    path: 'loyalty',
+    loadComponent: () => import('./pages/loyalty/loyalty').then((m) => m.Loyalty),
+    canActivate: [bookingGuard],
+  },
+
   { path: 'login', component: Login },
 
   { path: '**', redirectTo: '' },

@@ -33,6 +33,10 @@ public class SecurityConfig {
                         .pathMatchers("/api/auth/**").permitAll()
                         .pathMatchers("/api/rooms/**").permitAll()
 
+                        // Loyalty: tier catalogue is public; internal endpoints are service-to-service only
+                        .pathMatchers(HttpMethod.GET, "/api/loyalty/tiers").permitAll()
+                        .pathMatchers("/api/loyalty/internal/**").denyAll()
+
                         .pathMatchers("/api/chat/**").hasRole("ADMIN")
 
                         .anyExchange().authenticated()

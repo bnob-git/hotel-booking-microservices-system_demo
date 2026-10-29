@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: loyalty-service
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: loyalty-service
+
+  template:
+    metadata:
+      labels:
+        app: loyalty-service
+
+    spec:
+      containers:
+        - name: loyalty-service
+          image: loyalty-service:latest
+          imagePullPolicy: Never
+
+          ports:
+            - containerPort: 8086
+
+          envFrom:
+            - configMapRef:
+                name: loyalty-service-config
+
+          env:
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: JWT_SECRET
