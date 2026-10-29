@@ -31,6 +31,12 @@ public class BookingResponse {
     private final String contactEmail;
     private final LocalDateTime createdAt;
 
+    // Price snapshot (Track A)
+    private BigDecimal baseAmount;
+    private BigDecimal seasonalAdjustment;
+    private String promoCode;
+    private BigDecimal promoDiscount;
+
     public BookingResponse(Long id,
                            Long userId,
                            Long roomId,
@@ -76,7 +82,7 @@ public class BookingResponse {
     public static BookingResponse of(Booking booking,
                                      String username,
                                      String roomName) {
-        return new BookingResponse(
+        BookingResponse response = new BookingResponse(
                 booking.getId(),
                 booking.getUserId(),
                 booking.getRoomId(),
@@ -92,6 +98,11 @@ public class BookingResponse {
                 booking.getContactEmail(),
                 booking.getCreatedAt()
         );
+        response.baseAmount = booking.getBaseAmount();
+        response.seasonalAdjustment = booking.getSeasonalAdjustment();
+        response.promoCode = booking.getPromoCode();
+        response.promoDiscount = booking.getPromoDiscount();
+        return response;
     }
 
     // Getters only (immutable DTO)
@@ -150,5 +161,21 @@ public class BookingResponse {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public BigDecimal getBaseAmount() {
+        return baseAmount;
+    }
+
+    public BigDecimal getSeasonalAdjustment() {
+        return seasonalAdjustment;
+    }
+
+    public String getPromoCode() {
+        return promoCode;
+    }
+
+    public BigDecimal getPromoDiscount() {
+        return promoDiscount;
     }
 }

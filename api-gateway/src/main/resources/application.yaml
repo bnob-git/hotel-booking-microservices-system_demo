@@ -25,6 +25,11 @@ spring:
               predicates:
                 - Path=/api/rooms/**
 
+            - id: pricing-service
+              uri: ${BOOKING_SERVICE_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/pricing/**
+
             - id: ai-chat-service
               uri: ${AI_CHAT_SERVICE_URL:http://localhost:8084}
               predicates:

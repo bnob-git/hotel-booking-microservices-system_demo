@@ -18,6 +18,7 @@
   >
     Rooms
   </a>
+  <a mat-button routerLink="/search" routerLinkActive="active" data-testid="nav-search"> Search </a>
   <a mat-button routerLink="/bookings" routerLinkActive="active"> Bookings </a>
   <a *ngIf="userService.isAdmin()" mat-button routerLink="/admin" routerLinkActive="active">
     Admin

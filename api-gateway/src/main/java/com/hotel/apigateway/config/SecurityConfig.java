@@ -32,6 +32,7 @@ public class SecurityConfig {
 
                         .pathMatchers("/api/auth/**").permitAll()
                         .pathMatchers("/api/rooms/**").permitAll()
+                        .pathMatchers("/api/pricing/**").permitAll()
 
                         .pathMatchers("/api/chat/**").hasRole("ADMIN")
 

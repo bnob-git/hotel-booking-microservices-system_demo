@@ -29,6 +29,10 @@ export const routes: Routes = [
     canActivate: [adminGuard],
   },
   { path: 'login', component: Login },
+  {
+    path: 'search',
+    loadComponent: () => import('./pages/search/search').then((m) => m.Search),
+  },
 
   { path: '**', redirectTo: '' },
 ];

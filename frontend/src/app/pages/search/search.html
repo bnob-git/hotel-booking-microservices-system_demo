@@ -1,0 +1,117 @@
+<h2>Search Rooms</h2>
+
+<mat-card class="search-form">
+  <form (ngSubmit)="search()" data-testid="search-form">
+    <div class="fields">
+      <mat-form-field appearance="outline">
+        <mat-label>Check-in</mat-label>
+        <input matInput type="date" name="checkIn" [min]="today" [(ngModel)]="criteria.checkIn" required
+          data-testid="search-check-in" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Check-out</mat-label>
+        <input matInput type="date" name="checkOut" [min]="criteria.checkIn || today" [(ngModel)]="criteria.checkOut"
+          required data-testid="search-check-out" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="narrow">
+        <mat-label>Guests</mat-label>
+        <input matInput type="number" name="guests" min="1" max="10" [(ngModel)]="criteria.guests"
+          data-testid="search-guests" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Room type</mat-label>
+        <select matNativeControl name="type" [(ngModel)]="criteria.type" data-testid="search-type">
+          <option value="">Any</option>
+          <option *ngFor="let t of roomTypes" [value]="t">{{ t }}</option>
+        </select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="narrow">
+        <mat-label>Min €/night</mat-label>
+        <input matInput type="number" name="minPrice" min="0" [(ngModel)]="criteria.minPrice"
+          data-testid="search-min-price" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="narrow">
+        <mat-label>Max €/night</mat-label>
+        <input matInput type="number" name="maxPrice" min="0" [(ngModel)]="criteria.maxPrice"
+          data-testid="search-max-price" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Promo code</mat-label>
+        <input matInput name="promoCode" [(ngModel)]="criteria.promoCode" data-testid="search-promo" />
+      </mat-form-field>
+    </div>
+
+    <button mat-raised-button color="primary" type="submit" [disabled]="loading()" data-testid="search-submit">
+      {{ loading() ? 'Searching...' : 'Search' }}
+    </button>
+  </form>
+</mat-card>
+
+<p class="error" *ngIf="errorMessage()" data-testid="search-error">{{ errorMessage() }}</p>
+
+<p *ngIf="promoMessage() as promo" class="promo-message" [class.applied]="promo.applied"
+  [class.rejected]="!promo.applied" data-testid="search-promo-message">
+  {{ promo.text }}
+</p>
+
+<div class="results-header" *ngIf="searched() && !errorMessage()">
+  <span data-testid="search-result-count">{{ results().length }} room(s) available</span>
+  <button mat-button type="button" (click)="toggleSort()" *ngIf="results().length > 1" data-testid="search-sort">
+    Price: {{ sortOrder() === 'asc' ? 'low to high' : 'high to low' }}
+  </button>
+</div>
+
+<p *ngIf="searched() && !errorMessage() && results().length === 0" data-testid="search-no-results">
+  No rooms available for these dates and filters.
+</p>
+
+<div class="results">
+  <mat-card class="result" *ngFor="let room of sortedResults(); trackBy: trackByRoom"
+    [attr.data-testid]="'search-result-' + room.roomId">
+    <mat-card-header>
+      <mat-card-title data-testid="result-name">{{ room.name }}</mat-card-title>
+      <mat-card-subtitle>
+        {{ room.type }} · {{ room.nightlyBaseRate | number: '1.2-2' }} €/night base · {{ room.nights }} night(s)
+        <span *ngIf="room.maxGuests"> · up to {{ room.maxGuests }} guests</span>
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <table class="nightly" data-testid="result-nightly">
+        <tr *ngFor="let night of room.quote.nightly">
+          <td>{{ night.date | date: 'EEE d MMM y' }}</td>
+          <td>
+            <span class="season-badge" [ngClass]="'season-' + night.season.toLowerCase()"
+              [attr.data-testid]="'season-badge-' + night.season">
+              {{ seasonLabel(night.season) }} ×{{ night.multiplier | number: '1.2-2' }}
+            </span>
+          </td>
+          <td class="amount">{{ night.rate | number: '1.2-2' }} €</td>
+        </tr>
+      </table>
+
+      <dl class="breakdown">
+        <dt>Base</dt>
+        <dd data-testid="result-base">{{ room.quote.baseAmount | number: '1.2-2' }} €</dd>
+        <dt>Seasonal adjustment</dt>
+        <dd data-testid="result-seasonal">+{{ room.quote.seasonalAdjustment | number: '1.2-2' }} €</dd>
+        <dt>Discount<span *ngIf="room.quote.promoApplied"> ({{ room.quote.promoCode }})</span></dt>
+        <dd data-testid="result-discount">−{{ room.quote.promoDiscount | number: '1.2-2' }} €</dd>
+        <dt class="total">Total</dt>
+        <dd class="total" data-testid="result-total">{{ room.quote.totalPrice | number: '1.2-2' }} €</dd>
+      </dl>
+    </mat-card-content>
+
+    <mat-card-actions>
+      <button mat-raised-button color="primary" (click)="book(room)" [attr.data-testid]="'search-book-' + room.roomId">
+        Book
+      </button>
+    </mat-card-actions>
+  </mat-card>
+</div>
