@@ -98,6 +98,32 @@ services:
     networks:
       - hotel-net
 
+  loyalty-service:
+    build:
+      context: ./loyalty-service
+    container_name: loyalty-service
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${LOYALTY_DB_NAME:-loyalty_db}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      LOYALTY_POINTS_PER_EURO: ${LOYALTY_POINTS_PER_EURO:-10}
+      LOYALTY_POINT_VALUE: ${LOYALTY_POINT_VALUE:-0.05}
+      LOYALTY_REDEMPTION_INCREMENT: ${LOYALTY_REDEMPTION_INCREMENT:-100}
+    depends_on:
+      - postgres
+      - kafka
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8086 && printf \"GET /actuator/health HTTP/1.0\\r\\n\\r\\n\" >&3 && grep -q UP <&3'"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    networks:
+      - hotel-net
+
   ollama:
     image: ollama/ollama
     container_name: ollama
@@ -180,9 +206,11 @@ services:
       USER_SERVICE_URL: http://user-service:8081
       BOOKING_SERVICE_URL: http://booking-service:8082
       AI_CHAT_SERVICE_URL: http://ai-chat-service:8084
+      LOYALTY_SERVICE_URL: ${LOYALTY_SERVICE_URL:-http://loyalty-service:8086}
     depends_on:
       - user-service
       - booking-service
+      - loyalty-service
     ports:
       - "8080:8080"
     networks:
