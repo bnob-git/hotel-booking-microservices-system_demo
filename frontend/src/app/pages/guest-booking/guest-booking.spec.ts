@@ -1,3 +1,4 @@
+import { PricingService } from '../../core/services/pricing.service';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
@@ -30,6 +31,7 @@ describe('GuestBooking Component', () => {
         provideNoopAnimations(),
         { provide: RoomService, useValue: roomServiceMock },
         { provide: GuestBookingService, useValue: guestServiceMock },
+        { provide: PricingService, useValue: { getQuote: () => throwError(() => new Error('no quote')) } },
         {
           provide: ActivatedRoute,
           useValue: { snapshot: { queryParamMap: { get: () => roomId } } },

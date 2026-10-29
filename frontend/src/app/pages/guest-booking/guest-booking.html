@@ -109,8 +109,11 @@
         </mat-form-field>
 
         <p class="estimate" *ngIf="selectedRoom() && nights() > 0" data-testid="guest-estimate">
-          {{ nights() }} night(s) &times; {{ selectedRoom()!.price | currency: 'EUR' }} =
-          <strong>{{ estimatedTotal() | currency: 'EUR' }}</strong>
+          {{ nights() }} night(s) &times; {{ selectedRoom()!.price | currency: 'EUR' }}
+          <ng-container *ngIf="quote()?.seasonalAdjustment">
+            + {{ quote()!.seasonalAdjustment | currency: 'EUR' }} seasonal
+          </ng-container>
+          = <strong>{{ estimatedTotal() | currency: 'EUR' }}</strong>
         </p>
 
         <p class="error" *ngIf="errorMessage()" data-testid="guest-booking-error">

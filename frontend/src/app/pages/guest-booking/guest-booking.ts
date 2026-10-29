@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -12,6 +12,8 @@ import { MatSelectModule } from '@angular/material/select';
 
 import { RoomService } from '../../core/services/room.service';
 import { GuestBookingService } from '../../core/services/guest-booking.service';
+import { PricingService } from '../../core/services/pricing.service';
+import { PriceQuote } from '../../core/models/pricing';
 import { Room } from '../../core/models/room';
 import { BookingResponse } from '../../core/models/booking-response';
 import { GuestBookingRequest } from '../../core/models/guest-booking';
@@ -38,6 +40,9 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export class GuestBooking implements OnInit {
   readonly maxGuests = MAX_GUESTS;
 
+  private pricingService = inject(PricingService);
+  quote = signal<PriceQuote | null>(null);
+
   rooms = signal<Room[]>([]);
   form = signal<GuestBookingRequest>({
     roomId: 0,
@@ -63,6 +68,8 @@ export class GuestBooking implements OnInit {
   });
 
   estimatedTotal = computed(() => {
+    const quoted = this.quote()?.totalPrice;
+    if (quoted != null) return quoted;
     const room = this.selectedRoom();
     return room ? room.price * this.nights() : 0;
   });
@@ -86,6 +93,19 @@ export class GuestBooking implements OnInit {
 
   update<K extends keyof GuestBookingRequest>(field: K, value: GuestBookingRequest[K]): void {
     this.form.update((f) => ({ ...f, [field]: value }));
+    if (field === 'roomId' || field === 'checkInDate' || field === 'checkOutDate') {
+      this.refreshQuote();
+    }
+  }
+
+  /** Server quote (seasonal rates) so the estimate matches what the booking will cost. */
+  private refreshQuote(): void {
+    const f = this.form();
+    this.quote.set(null);
+    if (!f.roomId || !f.checkInDate || !f.checkOutDate || f.checkOutDate <= f.checkInDate) return;
+    this.pricingService
+      .getQuote({ roomId: f.roomId, checkInDate: f.checkInDate, checkOutDate: f.checkOutDate })
+      .subscribe({ next: (q) => this.quote.set(q), error: () => this.quote.set(null) });
   }
 
   validate(): string | null {
